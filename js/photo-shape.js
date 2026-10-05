@@ -243,6 +243,7 @@ export function openPhotoShape(file, { rim = 12, onApply, onError }) {
   const url = URL.createObjectURL(file);
   const image = new Image();
   image.onload = () => {
+    URL.revokeObjectURL(url);   // 読み込み終わった写真の一時URLは捨てる（画像そのものは手元に残る）
     img = image;
     marks = autoMarks(image) || {
       L: { x: image.naturalWidth * 0.2, y: image.naturalHeight * 0.45 }, R: { x: image.naturalWidth * 0.8, y: image.naturalHeight * 0.45 },
