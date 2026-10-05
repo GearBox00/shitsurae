@@ -379,7 +379,8 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
   let run = 0;
   for (let row = 1; row <= S; row++) {
     if (row === S || PART[rowKind[row]] !== PART[rowKind[run]]) {
-      pctx.fillStyle = `rgb(${PART[rowKind[run]] * 30},0,0)`;
+      // 赤＝部位（継ぎ目・欠けを含む。タップで部位を選ぶのに使う）、緑＝継ぎ目を除いた地の部位（塗るのに使う）
+      pctx.fillStyle = `rgb(${PART[rowKind[run]] * 30},${PART[rowKind[run]] * 30},0)`;
       pctx.fillRect(0, run, W, row - run);
       run = row;
     }
@@ -387,6 +388,11 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
   const baseParts = pctx.getImageData(0, 0, W, S);
   const normal = document.createElement('canvas'); normal.width = W; normal.height = S;
   const nctx = normal.getContext('2d', { willReadFrequently: true });
+  // 継ぎ目（赤）と欠け（緑）の割合 0〜255。滑らかに混ぜるための画像
+  const cover = document.createElement('canvas'); cover.width = W; cover.height = S;
+  const cctx = cover.getContext('2d', { willReadFrequently: true });
+  const blankCover = cctx.createImageData(W, S);
+  for (let i = 3; i < blankCover.data.length; i += 4) blankCover.data[i] = 255;
   nctx.fillStyle = 'rgb(128,128,255)'; nctx.fillRect(0, 0, W, S);
   const baseNormal = nctx.getImageData(0, 0, W, S);
 
@@ -426,6 +432,8 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
   function paint(defs) {
     const pImg = new ImageData(new Uint8ClampedArray(baseParts.data), W, S);
     const nImg = new ImageData(new Uint8ClampedArray(baseNormal.data), W, S);
+    const cImg = new ImageData(new Uint8ClampedArray(blankCover.data), W, S);
+    const pxV = total / S;
     dist.fill(99); height.fill(0); touched.fill(0);
     const list = [];
     const touch = o => { if (!touched[o]) { touched[o] = 1; list.push(o); } };
@@ -468,10 +476,15 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
           const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
           const cx = wrapPi(th - ct) * rr;
           const edge = CH_D * (1 - (cx / CH_W) ** 2) * (1 + 0.18 * Math.sin(cx * 9));
-          if (Math.abs(cx) < CH_W && Y > H - edge) {
+          // 欠けの縁までの距離から、その画素のうち何割が欠けかを決める（縁を滑らかにする）
+          const px = Math.max((2 * Math.PI * rr) / W, pxV);
+          const inside = Math.min(CH_W - Math.abs(cx), Y - (H - edge));
+          const cov = Math.max(0, Math.min(1, 0.5 + inside / px));
+          if (cov > 0) {
             const o = row * W + cc;
-            pImg.data[o * 4] = 4 * 30;
-            height[o] = Math.max(height[o], 0.55);
+            if (cov >= 0.5) pImg.data[o * 4] = 4 * 30;
+            cImg.data[o * 4 + 1] = Math.max(cImg.data[o * 4 + 1], Math.round(cov * 255));
+            height[o] = Math.max(height[o], 0.55 * cov);
             touch(o);
           }
         }
@@ -483,10 +496,13 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
       const row = (o / W) | 0, th = (((o % W) + 0.5) / W) * 2 * Math.PI;
       const w = SEAM_W * wob(th, rowY[row]);
       if (dist[o] < w && pImg.data[o * 4] !== 120) pImg.data[o * 4] = 3 * 30;
+      // 継ぎ目の縁までの距離を画素の大きさで割って、その画素のうち何割が継ぎ目かにする
+      const px = Math.max((2 * Math.PI * Math.max(rowR[row], 0.3)) / W, pxV) * 0.7;
+      const cov = Math.max(0, Math.min(1, 0.5 + (w - dist[o]) / px));
+      cImg.data[o * 4] = Math.max(cImg.data[o * 4], Math.round(cov * 255));
       height[o] = Math.max(height[o], Math.pow(Math.max(0, 1 - dist[o] / (w * 1.25)), 0.6));
     }
     // 盛り上がりから凹凸（法線）を作る：変わった画素とそのまわりだけ
-    const pxV = total / S;
     const done = new Uint8Array(W * S);
     for (const o0 of list) {
       const r0 = (o0 / W) | 0, c0 = o0 % W;
@@ -504,10 +520,11 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
     }
     pctx.putImageData(pImg, 0, 0);
     nctx.putImageData(nImg, 0, 0);
+    cctx.putImageData(cImg, 0, 0);
   }
 
   paint(sampleDefects(shape));
-  return { parts, detail, normal, wear: null, paint, kintsugi: true };
+  return { parts, detail, normal, cover, wear: null, paint, kintsugi: true };
 }
 
 // 写真の上の印（ピクセル座標）から、形の数値を求める

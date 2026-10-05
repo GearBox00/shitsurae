@@ -73,6 +73,8 @@ export class Viewer {
       uWearMap: { value: null },
       uWearOn: { value: 0 },
       uAge: { value: 0 },
+      uCover: { value: null },
+      uCoverOn: { value: 0 },
       uSel: { value: -1 },
       uPulse: { value: 0 },
     };
@@ -98,6 +100,7 @@ export class Viewer {
       partsTex = new THREE.CanvasTexture(v.parts);
       detailTex = new THREE.CanvasTexture(v.detail);
       wearTex = v.wear ? new THREE.CanvasTexture(v.wear) : null;
+      this.coverTex = v.cover ? new THREE.CanvasTexture(v.cover) : null;
       normalTex = v.normal ? new THREE.CanvasTexture(v.normal) : null;
     } else {
       [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
@@ -109,12 +112,14 @@ export class Viewer {
       ]);
       // 使い込みの表現に使う「擦れやすさの地図」（無い商品では使わない）
       wearTex = p.wearMap ? await new THREE.TextureLoader().loadAsync(p.wearMap) : null;
+      this.coverTex = null;
     }
     // 前のモデル・影・文字を片付ける
     if (this.root) {
       this.scene.remove(this.root, this.shadow);
       this.root.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
       if (this.uniforms.uWearMap.value === this.uniforms.uDetail.value) this.uniforms.uWearMap.value = null;
+      if (this.uniforms.uCover.value === this.uniforms.uDetail.value) this.uniforms.uCover.value = null;
       [this.uniforms.uParts.value, this.uniforms.uDetail.value, this.normalTex].forEach(t => t?.dispose());
       this.shadow.geometry.dispose();
     }
@@ -137,6 +142,11 @@ export class Viewer {
     if (wearTex) { wearTex.flipY = false; wearTex.colorSpace = THREE.NoColorSpace; }
     this.uniforms.uWearMap.value = wearTex || detailTex;
     this.uniforms.uWearOn.value = wearTex ? 1 : 0;
+    // 継ぎ目と欠けの割合（0〜1）。混ぜて塗るので、縁に画素の段々が出ない
+    this.uniforms.uCover.value?.dispose?.();
+    if (this.coverTex) { this.coverTex.flipY = false; this.coverTex.colorSpace = THREE.NoColorSpace; this.coverTex.anisotropy = 8; }
+    this.uniforms.uCover.value = this.coverTex || detailTex;
+    this.uniforms.uCoverOn.value = this.coverTex ? 1 : 0;
 
     const root = this.root = gltf.scene;
     const box = new THREE.Box3().setFromObject(root);
@@ -185,25 +195,39 @@ uniform sampler2D uParts; uniform sampler2D uDetail; uniform float uScale;
 uniform vec3 uColors[${MAX_PARTS}]; uniform float uRough[${MAX_PARTS}]; uniform float uDetailAmt[${MAX_PARTS}]; uniform float uMetal[${MAX_PARTS}];
 uniform vec3 uUnder[${MAX_PARTS}]; uniform vec3 uAged[${MAX_PARTS}];
 uniform sampler2D uWearMap; uniform float uWearOn; uniform float uAge;
-uniform float uSel; uniform float uPulse;`)
+uniform sampler2D uCover; uniform float uCoverOn;
+uniform float uSel; uniform float uPulse;
+vec3 partTop(int i) { return mix(uColors[i], uAged[i], uAge * uWearOn); }`)
         .replace('#include <map_fragment>', `
-int ip = clamp(int(floor(texture2D(uParts, vMapUv).r * 255.0 / uScale + 0.5)), 0, ${MAX_PARTS - 1});
-float dt = mix(1.0, texture2D(uDetail, vMapUv).r * 2.0, uDetailAmt[ip]);
+vec4 pv = texture2D(uParts, vMapUv);
+int ip = clamp(int(floor(pv.r * 255.0 / uScale + 0.5)), 0, ${MAX_PARTS - 1});
+// 継ぎ目(3)と欠け(4)は割合の画像で混ぜる。そのとき地の部位は緑の欄（継ぎ目を除いた部位）から読む
+float seamC = 0.0, chipC = 0.0;
+if (uCoverOn > 0.5) {
+  ip = clamp(int(floor(pv.g * 255.0 / uScale + 0.5)), 0, ${MAX_PARTS - 1});
+  vec4 cv = texture2D(uCover, vMapUv);
+  seamC = cv.r; chipC = cv.g;
+}
+int ipSel = chipC > 0.5 ? 4 : (seamC > 0.5 ? 3 : ip);
+float dAmt = mix(mix(uDetailAmt[ip], uDetailAmt[3], seamC), uDetailAmt[4], chipC);
+float pr = mix(mix(uRough[ip], uRough[3], seamC), uRough[4], chipC);
+float pm = mix(mix(uMetal[ip], uMetal[3], seamC), uMetal[4], chipC);
+float dt = mix(1.0, texture2D(uDetail, vMapUv).r * 2.0, dAmt);
 // 使い込み：上塗りの色は年月で深まり（uAged）、擦れやすい所から下の塗り（uUnder）がのぞく
 float wv = texture2D(uWearMap, vMapUv).r;
 float th = 1.03 - uAge * 0.62;
 float worn = uWearOn * smoothstep(th, th + 0.07, wv);
-vec3 topCol = mix(uColors[ip], uAged[ip], uAge * uWearOn);
+vec3 topCol = mix(mix(partTop(ip), partTop(3), seamC), partTop(4), chipC);
 diffuseColor.rgb *= mix(topCol, uUnder[ip], worn) * dt;`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = clamp(roughnessFactor * uRough[ip], 0.05, 1.0);
+roughnessFactor = clamp(roughnessFactor * pr, 0.05, 1.0);
 // 漆は使い込むほど艶が増す。擦れて下地が出た所は艶が落ちる
 roughnessFactor *= mix(1.0, 0.55, uAge * uWearOn);
 roughnessFactor = mix(roughnessFactor, 0.55, worn);`)
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
-metalnessFactor = uMetal[ip];`)
+metalnessFactor = pm;`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
+if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
     };
     mat.needsUpdate = true;
   }
@@ -229,6 +253,7 @@ if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
     this.partsImg = { data: c.getContext('2d').getImageData(0, 0, c.width, c.height).data, width: c.width, height: c.height };
     this.partsTex.needsUpdate = true;
     if (this.normalMapTex) this.normalMapTex.needsUpdate = true;
+    if (this.coverTex) this.coverTex.needsUpdate = true;
   }
 
   // 画面上の位置から、器の表面の点を求める（器の座標：単位 cm）
