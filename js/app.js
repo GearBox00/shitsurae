@@ -1,6 +1,8 @@
 // シミュレーター画面の操作。状態は1つのオブジェクトにまとめ、URLにも書き出す。
 import { Viewer } from './viewer.js';
 import { store, yen, newOrderNo, safeImg } from './store.js';
+import { buildVessel, sanitizeShape } from './vessel.js';
+import { openPhotoShape } from './photo-shape.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -18,6 +20,7 @@ function defaultState() {
   const s = { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
   if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
   if (P.aging) s.age = 0;
+  if (P.defaultShape) s.shape = null;   // null = 見本の形
   return s;
 }
 
@@ -30,6 +33,22 @@ function eff() {
   return e;
 }
 const variantOf = () => P.variants?.find(v => v.id === state.variant);
+
+// 形を組み立てる商品（写真から形を作れる商品）
+const shapeOf = () => state.shape || P.defaultShape;
+function textCfg() {
+  const E = eff();
+  if (!P.defaultShape || !E.text) return E.text;
+  // 底が浅い器では、銘を貼る深さを浅くしないと内側の底に写り込む
+  const sh = shapeOf();
+  return { ...E.text, depth: Math.min(0.3, (Math.min(sh.hf + 0.5, sh.h - 0.4) * 0.8) / (2 * sh.rf)) };
+}
+function effModel() {
+  const E = eff();
+  if (P.defaultShape) { E.vessel = buildVessel(shapeOf()); E.text = textCfg(); }
+  return E;
+}
+const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null]);
 
 // 色の一覧は文字列（#rrggbb）でも、{hex, name, metal} の形でも書けるようにそろえる
 function normalizeProduct(p) {
@@ -104,6 +123,7 @@ function sanitize(obj) {
   if (P.materials[obj.material]) s.material = obj.material;
   if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
   if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
+  if (P.defaultShape && obj.shape) s.shape = sanitizeShape(obj.shape);
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -113,7 +133,7 @@ function sanitize(obj) {
 }
 
 // ---------- 反映 ----------
-let textTimer, loadedVariant, modelQueue = Promise.resolve();
+let textTimer, loadedKey, modelQueue = Promise.resolve();
 function apply() {
   // 器の種類が変わったときだけ、3Dモデルを読み込み直す（連続で押されても順番に処理する）
   modelQueue = modelQueue.then(syncModel).then(applyLooks).catch(e => {
@@ -125,17 +145,19 @@ function apply() {
   render();
 }
 
+// 器の種類か形が変わったときだけ、3Dを作り直す
 async function syncModel() {
-  if (!P.variants || loadedVariant === state.variant) return;
-  const want = state.variant;
+  const want = modelKey();
+  if (loadedKey === want) return;
   $('loading').hidden = false;
   $('loading').textContent = '器を読み込んでいます';
-  await viewer.loadModel(eff());
-  loadedVariant = want;
+  await new Promise(r => setTimeout(r, 30));   // 「読み込んでいます」を先に描かせる
+  await viewer.loadModel(effModel());
+  loadedKey = want;
   $('loading').hidden = true;
   renderViews();
   viewer.view('side');
-  if (state.variant !== want) return syncModel();
+  if (modelKey() !== want) return syncModel();
 }
 
 function applyLooks() {
@@ -147,10 +169,10 @@ function applyLooks() {
   clearTimeout(textTimer);
   textTimer = setTimeout(() => {
     if (!P.text) return;
-    const E = eff();
-    const f = E.text.fonts.find(f => f.id === state.text.font);
-    const col = E.text.colors.find(c => c.hex === state.text.color);
-    viewer.setText(E.text, state.text.value, f.css, state.text.color, col?.metal || 0);
+    const tc = textCfg();
+    const f = tc.fonts.find(f => f.id === state.text.font);
+    const col = tc.colors.find(c => c.hex === state.text.color);
+    viewer.setText(tc, state.text.value, f.css, state.text.color, col?.metal || 0);
   }, 200);
 }
 
@@ -176,7 +198,15 @@ function renderAge() {
   $('ageLabel').textContent = stop.label;
 }
 
+function renderShape() {
+  if (!P.defaultShape) return;
+  const sh = state.shape;
+  $('shapeStatus').textContent = sh ? `写真から作った形（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm）` : (P.defaultShapeLabel || '見本の形');
+  $('shapeReset').hidden = !sh;
+}
+
 function render() {
+  renderShape();
   renderAge();
   renderVariants();
   renderParts();
@@ -350,6 +380,10 @@ function specRows() {
   });
   const v = variantOf();
   if (v) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
+  if (P.defaultShape) {
+    const sh = shapeOf();
+    rows.unshift(['形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
+  }
   if (P.text && state.text.value) {
     const f = P.text.fonts.find(f => f.id === state.text.font);
     const col = P.text.colors.find(c => c.hex === state.text.color);
@@ -425,7 +459,7 @@ async function main() {
     });
   }
 
-  viewer = new Viewer($('stage'), eff());
+  viewer = new Viewer($('stage'), effModel());
   try {
     await viewer.init();
   } catch (e) {
@@ -434,9 +468,25 @@ async function main() {
     return;
   }
   $('loading').hidden = true;
-  loadedVariant = state.variant;
+  loadedKey = modelKey();
   if (params.has('debug')) window.__viewer = viewer;
   viewer.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  // 写真から器の形を作る（写真はこの端末の中だけで使う）
+  if (P.defaultShape) {
+    $('shapeSec').hidden = false;
+    $('photoInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      e.target.value = '';   // 同じ写真を選び直しても反応するように
+      $('shapeErr').textContent = '';
+      openPhotoShape(file, {
+        rim: shapeOf().rim,
+        onApply: shape => commit(s => { s.shape = shape; }),
+        onError: msg => { $('shapeErr').textContent = msg; },
+      });
+    });
+    $('shapeReset').addEventListener('click', () => commit(s => { s.shape = null; }));
+  }
 
   // 使い込みのつまみ（値段や発注書には入れず、見た目だけ変える）
   if (P.aging) {
@@ -525,7 +575,7 @@ async function main() {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); (e.shiftKey ? $('redoBtn') : $('undoBtn')).click(); }
   });
   // 「最初に戻す」は配色だけを戻し、選んでいる器の種類はそのままにする
-  $('resetBtn').addEventListener('click', () => commit(s => Object.assign(s, defaultState(), s.variant ? { variant: s.variant } : {})));
+  $('resetBtn').addEventListener('click', () => commit(s => Object.assign(s, defaultState(), s.variant ? { variant: s.variant } : {}, s.shape ? { shape: s.shape } : {})));
   $('shuffleBtn').addEventListener('click', () => commit(s => {
     P.parts.forEach(pt => {
       const pal = P.palettes[pt.palette];

@@ -87,15 +87,29 @@ export class Viewer {
 
   // 3Dモデルと画像を読み込む。器の種類を切り替えるときは、これだけを呼び直す
   async loadModel(p) {
-    const [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
-      new GLTFLoader().loadAsync(p.model),
-      loadImageData(p.partsMap),
-      new THREE.TextureLoader().loadAsync(p.partsMap),
-      new THREE.TextureLoader().loadAsync(p.detailMap),
-      p.normalMap ? new THREE.TextureLoader().loadAsync(p.normalMap) : null,
-    ]);
-    // 使い込みの表現に使う「擦れやすさの地図」（無い商品では使わない）
-    const wearTex = p.wearMap ? await new THREE.TextureLoader().loadAsync(p.wearMap) : null;
+    let gltf, partsImg, partsTex, detailTex, normalTex, wearTex;
+    if (p.vessel) {
+      // ブラウザの中で組み立てた器（js/vessel.js）。ファイルは読み込まない
+      const v = p.vessel;
+      gltf = { scene: new THREE.Group() };
+      gltf.scene.add(new THREE.Mesh(v.geometry, new THREE.MeshStandardMaterial()));
+      const pc = v.parts.getContext('2d');
+      partsImg = { data: pc.getImageData(0, 0, v.parts.width, v.parts.height).data, width: v.parts.width, height: v.parts.height };
+      partsTex = new THREE.CanvasTexture(v.parts);
+      detailTex = new THREE.CanvasTexture(v.detail);
+      wearTex = new THREE.CanvasTexture(v.wear);
+      normalTex = null;
+    } else {
+      [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
+        new GLTFLoader().loadAsync(p.model),
+        loadImageData(p.partsMap),
+        new THREE.TextureLoader().loadAsync(p.partsMap),
+        new THREE.TextureLoader().loadAsync(p.detailMap),
+        p.normalMap ? new THREE.TextureLoader().loadAsync(p.normalMap) : null,
+      ]);
+      // 使い込みの表現に使う「擦れやすさの地図」（無い商品では使わない）
+      wearTex = p.wearMap ? await new THREE.TextureLoader().loadAsync(p.wearMap) : null;
+    }
     // 前のモデル・影・文字を片付ける
     if (this.root) {
       this.scene.remove(this.root, this.shadow);

@@ -91,6 +91,22 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 .age-ticks { position: relative; height: 16px; font-size: 11px; color: var(--muted); margin: 0 9px; }
 .age-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 
+.shape-status { margin: 0 0 8px; font-weight: 700; font-size: 14px; }
+.shape-actions { display: flex; align-items: center; gap: 14px; }
+.btn.small { min-height: 38px; padding: 0 14px; font-size: 13px; }
+
+.photo { width: min(1000px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+.photo-inner { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); }
+.photo-body { display: grid; grid-template-columns: 1fr 260px; gap: 18px; padding: 16px 22px; overflow-y: auto; }
+.photo-stage { min-width: 0; display: flex; justify-content: center; background: var(--paper-2); border-radius: 10px; }
+.photo-stage canvas { display: block; max-width: 100%; touch-action: none; cursor: crosshair; border-radius: 10px; }
+.photo-legend { margin: 10px 0; padding: 0; list-style: none; font-size: 13px; }
+.photo-legend li { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.photo-legend b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--chalk); font-size: 12px; }
+.rim-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; margin-top: 6px; }
+.rim-field input { min-height: 42px; border-radius: 8px; border: 1px solid var(--rule); padding: 0 10px; font-size: 16px; background: #fff; width: 120px; }
+.shape-nums { font-size: 12px; margin: 10px 0 0; }
+
 .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .preset {
   display: flex; align-items: center; gap: 10px; text-align: left;
@@ -244,6 +260,7 @@ dialog::backdrop { background: rgba(20, 30, 27, .55); }
   .shots img:nth-child(3) { display: none; }
   .fields { grid-template-columns: 1fr; }
   .order-foot .btn { flex: 1; }
+  .photo-body { grid-template-columns: 1fr; padding: 12px; }
   .order-total { width: 100%; }
 }
 

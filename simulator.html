@@ -39,6 +39,18 @@
       <span class="slip-no mono" id="slipNo"></span>
     </div>
 
+    <section class="slip-sec shape" id="shapeSec" hidden>
+      <h2 class="sec-title">写真から器の形を作る</h2>
+      <p class="shape-status" id="shapeStatus">見本の形</p>
+      <div class="shape-actions">
+        <label class="btn ghost small" for="photoInput">写真を選ぶ</label>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+        <button class="link" id="shapeReset" type="button" hidden>見本の形に戻す</button>
+      </div>
+      <p class="note">横から少し見下ろして撮った写真が向いています。写真はこの端末の中だけで使い、どこにも送信しません。</p>
+      <p class="err" id="shapeErr" role="alert"></p>
+    </section>
+
     <section class="slip-sec" id="variantSec" hidden>
       <h2 class="sec-title" id="variantTitle">種類</h2>
       <div class="variants" id="variants" role="radiogroup" aria-labelledby="variantTitle"></div>
@@ -123,6 +135,30 @@
       <button class="btn primary" type="button" id="submitBtn">この内容で注文する</button>
     </footer>
   </form>
+</dialog>
+
+<dialog class="photo" id="photoDlg" aria-labelledby="photoTitle">
+  <div class="photo-inner">
+    <header class="order-head">
+      <h2 id="photoTitle">印を器に合わせる</h2>
+      <button class="close" type="button" onclick="this.closest('dialog').close()" aria-label="閉じる">×</button>
+    </header>
+    <div class="photo-body">
+      <div class="photo-stage" id="photoStage"><canvas id="photoCanvas"></canvas></div>
+      <div class="photo-side">
+        <p class="note">番号の印を、写真の器の同じ場所までドラッグしてください。黄色の点線が、3Dにしたときの輪郭です。器の輪郭に重なれば合っています。</p>
+        <ol class="photo-legend" id="photoLegend"></ol>
+        <label class="rim-field">口径（cm）<input type="number" id="rimInput" min="6" max="40" step="0.5" value="12"></label>
+        <p class="note">写真だけでは実際の大きさが分からないため、口の直径を入れてください。</p>
+        <p class="shape-nums mono" id="shapeNums"></p>
+        <p class="err" id="photoErr" role="alert"></p>
+      </div>
+    </div>
+    <footer class="order-foot">
+      <button class="btn ghost" type="button" id="autoBtn">自動で置き直す</button>
+      <button class="btn primary" type="button" id="applyShape">この形で3Dを作る</button>
+    </footer>
+  </div>
 </dialog>
 
 <dialog class="done" id="doneDlg">
