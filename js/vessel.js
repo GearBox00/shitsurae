@@ -325,8 +325,20 @@ function designedSample(shape) {
 // 点の貫く向きに応じて、器の厚みの分の差を数えない距離。
 // 平らな面（上下に貫く）は、平皿の裏の高台の内側まで届くよう 1cm まで許す
 const THRU_V = 1.0;
-function throughDist(dX, dY, dZ, axis) {
-  return axis === 1 ? Math.hypot(dX, Math.max(0, Math.abs(dY) - THRU_V), dZ) : Math.hypot(dX, dY, Math.max(0, Math.abs(dZ) - T * 1.15));
+// 点と線分の距離。X＝回転方向、Y＝高さ、Z＝半径方向（どれも線分の始点からの差）
+//   axis 0（壁）：高さも含めて測り、半径方向は器の厚みの分を数えない
+//   axis 1（平らな面）：真上から見た位置（X と Z）だけで測る。高さの差が THRU_V 以内なら上の面も裏の面も同じ扱い
+//   （皿の口縁近くは上と裏が斜めにずれるので、高さを測りに入れると裏の割れが点線になる）
+function segDist(X, Py, Pz, Xb, Qy, Qz, axis) {
+  if (axis === 1) {
+    const L = Xb * Xb + Qz * Qz + 1e-9;
+    const k = Math.max(0, Math.min(1, (X * Xb + Pz * Qz) / L));
+    if (Math.abs(Py - k * Qy) > THRU_V) return 99;
+    return Math.hypot(X - k * Xb, Pz - k * Qz);
+  }
+  const L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
+  const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
+  return Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
 }
 
 // 割れの長さ（cm）
@@ -348,9 +360,7 @@ export function distToCrack(pts, t, y, r) {
     const [ta, ya, ra, ax = 0] = pts[i], [tb, yb, rb] = pts[i + 1];
     const X = wrapPi(t - ta) * rr, Xb = wrapPi(tb - ta) * rr;
     const Py = y - ya, Qy = yb - ya, Pz = r - ra, Qz = rb - ra;
-    const L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
-    const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
-    const d = throughDist(X - k * Xb, Py - k * Qy, Pz - k * Qz, ax);
+    const d = segDist(X, Py, Pz, Xb, Qy, Qz, ax);
     if (d < best) best = d;
   }
   return best;
@@ -453,12 +463,11 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
           const span = 0.4 / rr + Math.abs(dTheta);
           const tMid = ta + dTheta / 2;
           const c0 = Math.floor(((tMid - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((tMid + span) / (2 * Math.PI)) * W);
-          const Xb = dTheta * rr, Qy = yb - ya, Qz = rb - ra, L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
+          const Xb = dTheta * rr, Qy = yb - ya, Qz = rb - ra;
           for (let col = c0; col <= c1; col++) {
             const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
             const X = wrapPi(th - ta) * rr, Py = Y - ya, Pz = Rp - ra;
-            const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
-            const d = throughDist(X - k * Xb, Py - k * Qy, Pz - k * Qz, ax);
+            const d = segDist(X, Py, Pz, Xb, Qy, Qz, ax);
             const o = row * W + cc;
             if (d < 0.2) { if (d < dist[o]) dist[o] = d; touch(o); }
           }
