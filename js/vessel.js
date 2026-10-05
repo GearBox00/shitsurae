@@ -202,6 +202,8 @@ export function buildVessel(shape, { mode = 'lacquer', texSize = 1024 } = {}) {
 }
 
 // ---------- 金継ぎ用：割れ・欠け・継ぎ目の盛り上がり ----------
+// 割れは点の並び [回転角θ, 高さy, 半径r]（単位 cm）。器を貫く扱いなので、外側でなぞれば内側にも出る。
+// 欠けは口縁の回転角θ。どちらも、器の形を作り直さずに描き直せる（paint）。
 function mulberry32(a) {
   return () => {
     a |= 0; a = (a + 0x6d2b79f5) | 0;
@@ -210,120 +212,220 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+const wrapPi = a => ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 
-// 割れの線：口縁から下へ、なめらかに蛇行する（揺れの「速さ」をゆっくり変える）
-function crackLine(rand, t0, y0, y1, drift, n) {
-  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand());
-  const pts = [];
-  let vel = 0, acc = 0;
-  for (let i = 0; i < n; i++) {
-    const q = i / (n - 1);
-    pts.push([t0 + drift * q + acc, y0 + (y1 - y0) * q]);
-    vel = vel * 0.88 + gauss() * 0.006;
-    acc += vel;
-  }
-  return pts;
+// 器の外側の、高さ y での半径
+export function outerRadiusAt(shape, y) {
+  const R = shape.rim / 2;
+  if (y >= shape.h) return R;
+  if (y <= shape.hf) return shape.rf;
+  const t = (y - shape.hf) / (shape.h - shape.hf);
+  return shape.a + (R - shape.a) * (1 - Math.pow(1 - t, shape.p));
 }
 
-function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
-  const W = S;   // 横（回転角）も細かく持つ（割れは角度で変わるため）
-  const H = shape.h, R = shape.rim / 2;
+// 見本の割れと欠け（茶碗の見本と同じ並びを、器の高さと大きさに合わせる）
+export function sampleDefects(shape) {
+  const H = shape.h;
   const floorY = Math.min(shape.hf + 0.5, H - 0.4);
   const yLow = Math.min(H - 0.3, Math.max(floorY + 0.45, shape.hf + 0.3, H * 0.22));
   const rand = mulberry32(7);
-  // 茶碗の見本と同じ並び：長い割れ・反対側の短い割れ・枝分かれ（高さは器に合わせる）
-  const a = crackLine(rand, 0.55, H + 0.3, yLow, 0.45, 70);
-  const b = crackLine(rand, 3.55, H + 0.3, Math.max(yLow, H * 0.5), -0.35, 70);
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand());
+  const line = (t0, y0, y1, drift, n) => {
+    const pts = [];
+    let vel = 0, acc = 0;
+    for (let i = 0; i < n; i++) {
+      const q = i / (n - 1), y = y0 + (y1 - y0) * q;
+      pts.push([t0 + drift * q + acc, y, outerRadiusAt(shape, y)]);
+      vel = vel * 0.88 + gauss() * 0.006;
+      acc += vel;
+    }
+    return pts;
+  };
+  const a = line(0.55, H + 0.3, yLow, 0.45, 70);
+  const b = line(3.55, H + 0.3, Math.max(yLow, H * 0.5), -0.35, 70);
   const at = a[26];
-  const c = [at, ...crackLine(rand, at[0], at[1], Math.min(at[1] - 0.2, Math.max(yLow, H * 0.38)), 0.75, 40).slice(1)];
-  const lines = [a, b, c];
+  const c = [at, ...line(at[0], at[1], Math.min(at[1] - 0.2, Math.max(yLow, H * 0.38)), 0.75, 40).slice(1)];
+  return { cracks: [a, b, c], chips: [2.05] };
+}
 
+// 割れの長さ（cm）
+export function crackLength(pts) {
+  let L = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [t0, y0, r0] = pts[i - 1], [t1, y1, r1] = pts[i];
+    const rr = Math.max((r0 + r1) / 2, 0.3);
+    L += Math.hypot(wrapPi(t1 - t0) * rr, y1 - y0, r1 - r0);
+  }
+  return L;
+}
+
+// 点 (θ, y, r) と割れの線との距離（器の厚みの分の内外の差は数えない＝器を貫く）
+export function distToCrack(pts, t, y, r) {
+  let best = 99;
+  const rr = Math.max(r, 0.3);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ta, ya, ra] = pts[i], [tb, yb, rb] = pts[i + 1];
+    const X = wrapPi(t - ta) * rr, Xb = wrapPi(tb - ta) * rr;
+    const Py = y - ya, Qy = yb - ya, Pz = r - ra, Qz = rb - ra;
+    const L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
+    const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
+    const d = Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+// 小さな乱数の画像（拡大して描くと、なめらかなむらになる）
+function noiseCanvas(seed, n) {
+  const c = document.createElement('canvas'); c.width = c.height = n;
+  const g = c.getContext('2d'), img = g.createImageData(n, n), rand = mulberry32(seed);
+  for (let i = 0; i < n * n; i++) {
+    const v = Math.round(rand() * 255);
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
+function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
+  const W = S;
+  const H = shape.h, R = shape.rim / 2;
+  const PART = { outer: 0, rim: 0, inner: 1, foot: 2 };
+
+  // ---- 部位の土台（行ごとに決まる）と、平らな凹凸 ----
+  const parts = document.createElement('canvas'); parts.width = W; parts.height = S;
+  const pctx = parts.getContext('2d', { willReadFrequently: true });
+  let run = 0;
+  for (let row = 1; row <= S; row++) {
+    if (row === S || PART[rowKind[row]] !== PART[rowKind[run]]) {
+      pctx.fillStyle = `rgb(${PART[rowKind[run]] * 30},0,0)`;
+      pctx.fillRect(0, run, W, row - run);
+      run = row;
+    }
+  }
+  const baseParts = pctx.getImageData(0, 0, W, S);
+  const normal = document.createElement('canvas'); normal.width = W; normal.height = S;
+  const nctx = normal.getContext('2d', { willReadFrequently: true });
+  nctx.fillStyle = 'rgb(128,128,255)'; nctx.fillRect(0, 0, W, S);
+  const baseNormal = nctx.getImageData(0, 0, W, S);
+
+  // ---- 質感（拡大した乱数の画像を重ねて作る。1画素ずつ計算しないので速い） ----
+  const detail = document.createElement('canvas'); detail.width = 512; detail.height = 512;
+  const dctx = detail.getContext('2d');
+  dctx.fillStyle = 'rgb(128,128,128)'; dctx.fillRect(0, 0, 512, 512);
+  dctx.imageSmoothingEnabled = true; dctx.imageSmoothingQuality = 'high';
+  [[10, 0.07, 1], [20, 0.04, 2], [40, 0.025, 3]].forEach(([n, a, sd]) => { dctx.globalAlpha = a; dctx.drawImage(noiseCanvas(sd, n), 0, 0, 512, 512); });
+  // 高台の土はざらつきを強く
+  const footRows = [];
+  for (let row = 0; row < S; row++) if (rowKind[row] === 'foot') footRows.push(row);
+  if (footRows.length) {
+    const y0 = (footRows[0] / S) * 512, y1 = ((footRows[footRows.length - 1] + 1) / S) * 512;
+    dctx.save(); dctx.beginPath(); dctx.rect(0, y0, 512, y1 - y0); dctx.clip();
+    [[64, 0.3, 11], [128, 0.15, 12]].forEach(([n, a, sd]) => { dctx.globalAlpha = a; dctx.drawImage(noiseCanvas(sd, n), 0, 0, 512, 512); });
+    dctx.restore();
+  }
+  // 釉薬は外側の下のほうで溜まって少し濃くなる
+  for (let row = 0; row < S; row++) {
+    if (rowKind[row] !== 'outer') continue;
+    const f = Math.max(0, Math.min(1, (shape.hf + 1.5 - rowY[row]) / 1.5));
+    if (f <= 0) continue;
+    dctx.globalAlpha = f * 0.22; dctx.fillStyle = '#000';
+    dctx.fillRect(0, (row / S) * 512, 512, Math.max(1, 512 / S) + 0.5);
+  }
+  dctx.globalAlpha = 1;
+
+  // ---- 割れと欠けを描く（描き直しのたびに呼ぶ） ----
   const SEAM_W = 0.055;
-  const dist = new Float32Array(W * S).fill(99);
+  const CH_W = Math.min(0.75, R * 0.14), CH_D = Math.min(0.55, H * 0.12);
   const wob = (th, y) => 1 + 0.25 * Math.sin(th * 37 + y * 5.1) * Math.sin(y * 13 + th * 3);
-  for (const pts of lines) {
-    for (let i = 0; i < pts.length - 1; i++) {
-      const [t0, y0] = pts[i], [t1, y1] = pts[i + 1];
-      const lo = Math.min(y0, y1) - 0.3, hi = Math.max(y0, y1) + 0.3;
-      for (let row = 0; row < S; row++) {
-        const Y = rowY[row];
-        if (Y < lo || Y > hi) continue;
-        const rr = Math.max(rowR[row], 0.3);
-        const span = 0.35 / rr + Math.abs(t1 - t0);          // 調べる角度の幅（線の近くだけ）
-        const c0 = Math.floor(((t0 - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((t0 + span) / (2 * Math.PI)) * W);
-        const db = ((t1 - t0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-        const qx = db * rr, qy = y1 - y0, L = qx * qx + qy * qy + 1e-9;
-        for (let col = c0; col <= c1; col++) {
-          const cc = ((col % W) + W) % W;
-          const th = ((cc + 0.5) / W) * 2 * Math.PI;
-          const da = ((th - t0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-          const px = da * rr, py = Y - y0;
-          const k = Math.max(0, Math.min(1, (px * qx + py * qy) / L));
-          const d = Math.hypot(px - k * qx, py - k * qy);
-          const o = row * W + cc;
-          if (d < dist[o]) dist[o] = d;
+  const dist = new Float32Array(W * S);
+  const height = new Float32Array(W * S);
+  const touched = new Uint8Array(W * S);
+
+  function paint(defs) {
+    const pImg = new ImageData(new Uint8ClampedArray(baseParts.data), W, S);
+    const nImg = new ImageData(new Uint8ClampedArray(baseNormal.data), W, S);
+    dist.fill(99); height.fill(0); touched.fill(0);
+    const list = [];
+    const touch = o => { if (!touched[o]) { touched[o] = 1; list.push(o); } };
+
+    // 割れ：線の近くの画素だけ距離を測る
+    for (const pts of defs.cracks || []) {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ta, ya, ra] = pts[i], [tb, yb, rb] = pts[i + 1];
+        const lo = Math.min(ya, yb) - 0.35, hi = Math.max(ya, yb) + 0.35;
+        const dTheta = wrapPi(tb - ta);
+        for (let row = 0; row < S; row++) {
+          const Y = rowY[row];
+          if (Y < lo || Y > hi) continue;
+          const Rp = rowR[row], rr = Math.max(Rp, 0.3);
+          if (Math.abs(Rp - ra) > Math.abs(rb - ra) + T * 1.15 + 0.4 && Math.abs(Rp - rb) > T * 1.15 + 0.4) continue;
+          const span = 0.4 / rr + Math.abs(dTheta);
+          const tMid = ta + dTheta / 2;
+          const c0 = Math.floor(((tMid - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((tMid + span) / (2 * Math.PI)) * W);
+          const Xb = dTheta * rr, Qy = yb - ya, Qz = rb - ra, L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
+          for (let col = c0; col <= c1; col++) {
+            const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
+            const X = wrapPi(th - ta) * rr, Py = Y - ya, Pz = Rp - ra;
+            const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
+            const d = Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
+            const o = row * W + cc;
+            if (d < 0.2) { if (d < dist[o]) dist[o] = d; touch(o); }
+          }
         }
       }
     }
+    // 欠け：口縁の近くの画素
+    for (const ct of defs.chips || []) {
+      for (let row = 0; row < S; row++) {
+        const Y = rowY[row];
+        if (rowKind[row] === 'foot' || Y < H - CH_D * 1.2) continue;
+        const rr = Math.max(rowR[row], 0.3), span = (CH_W * 1.2) / rr;
+        const c0 = Math.floor(((ct - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((ct + span) / (2 * Math.PI)) * W);
+        for (let col = c0; col <= c1; col++) {
+          const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
+          const cx = wrapPi(th - ct) * rr;
+          const edge = CH_D * (1 - (cx / CH_W) ** 2) * (1 + 0.18 * Math.sin(cx * 9));
+          if (Math.abs(cx) < CH_W && Y > H - edge) {
+            const o = row * W + cc;
+            pImg.data[o * 4] = 4 * 30;
+            height[o] = Math.max(height[o], 0.55);
+            touch(o);
+          }
+        }
+      }
+    }
+    // 継ぎ目の部位と盛り上がり
+    for (const o of list) {
+      if (dist[o] >= 99) continue;
+      const row = (o / W) | 0, th = (((o % W) + 0.5) / W) * 2 * Math.PI;
+      const w = SEAM_W * wob(th, rowY[row]);
+      if (dist[o] < w && pImg.data[o * 4] !== 120) pImg.data[o * 4] = 3 * 30;
+      height[o] = Math.max(height[o], Math.pow(Math.max(0, 1 - dist[o] / (w * 1.25)), 0.6));
+    }
+    // 盛り上がりから凹凸（法線）を作る：変わった画素とそのまわりだけ
+    const pxV = total / S;
+    const done = new Uint8Array(W * S);
+    for (const o0 of list) {
+      const r0 = (o0 / W) | 0, c0 = o0 % W;
+      for (const [dr, dc] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const row = r0 + dr; if (row < 0 || row >= S) continue;
+        const col = (c0 + dc + W) % W, o = row * W + col;
+        if (done[o]) continue; done[o] = 1;
+        const pxU = (2 * Math.PI * Math.max(rowR[row], 0.3)) / W;
+        const hx = height[row * W + ((col + 1) % W)] - height[row * W + ((col - 1 + W) % W)];
+        const hy = height[Math.min(S - 1, row + 1) * W + col] - height[Math.max(0, row - 1) * W + col];
+        let nx = (-hx / 2 / pxU) * 0.012, ny = (-hy / 2 / pxV) * 0.012, nz = 1;
+        const Ln = Math.hypot(nx, ny, nz); nx /= Ln; ny /= Ln; nz /= Ln;
+        nImg.data[o * 4] = (nx * 0.5 + 0.5) * 255; nImg.data[o * 4 + 1] = (ny * 0.5 + 0.5) * 255; nImg.data[o * 4 + 2] = (nz * 0.5 + 0.5) * 255;
+      }
+    }
+    pctx.putImageData(pImg, 0, 0);
+    nctx.putImageData(nImg, 0, 0);
   }
 
-  // 部位・質感・凹凸を1画素ずつ決める
-  const parts = document.createElement('canvas'); parts.width = W; parts.height = S;
-  const detail = document.createElement('canvas'); detail.width = W; detail.height = S;
-  const pImg = parts.getContext('2d').createImageData(W, S);
-  const dImg = detail.getContext('2d').createImageData(W, S);
-  const height = new Float32Array(W * S);
-  const nGlaze = makeNoise(1), nClay = makeNoise(2), nGold = makeNoise(3);
-  const CH_T = 2.05, CH_W = Math.min(0.75, R * 0.14), CH_D = Math.min(0.55, H * 0.12);
-  const PART = { outer: 0, rim: 0, inner: 1, foot: 2 };
-  for (let row = 0; row < S; row++) {
-    const kind = rowKind[row], Y = rowY[row], rr = Math.max(rowR[row], 0.3);
-    for (let col = 0; col < W; col++) {
-      const o = row * W + col, th = ((col + 0.5) / W) * 2 * Math.PI;
-      let part = PART[kind];
-      const w = SEAM_W * wob(th, Y);
-      if (dist[o] < w) part = 3;
-      const da = ((th - CH_T + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
-      const cx = da * rr;
-      const edge = CH_D * (1 - (cx / CH_W) ** 2) * (1 + 0.18 * Math.sin(cx * 9));
-      const chip = kind !== 'foot' && Math.abs(cx) < CH_W && Y > H - edge;
-      if (chip) part = 4;
-      pImg.data[o * 4] = part * 30; pImg.data[o * 4 + 3] = 255;
-      // 質感：釉薬は下のほうで溜まって少し濃く、高台の土はざらつき、金はわずかなむら
-      let dv = 1;
-      const u = col / W, v = row / S;
-      if (part <= 1) dv += (fbm(nGlaze, u * 10, v * 10, 4) - 0.5) * 0.14 - (kind === 'outer' ? Math.max(0, Math.min(1, (shape.hf + 1.5 - Y) / 1.5)) * 0.22 : 0);
-      else if (part === 2) dv += (fbm(nClay, u * 60, v * 60, 3) - 0.5) * 0.5;
-      else dv += (fbm(nGold, u * 120, v * 120, 2) - 0.5) * 0.12;
-      const dvb = Math.max(0, Math.min(255, Math.round(dv * 128)));
-      dImg.data[o * 4] = dImg.data[o * 4 + 1] = dImg.data[o * 4 + 2] = dvb; dImg.data[o * 4 + 3] = 255;
-      // 盛り上がり：継ぎ目は細い尾根、欠けの埋めは平らに少し高い
-      let h = Math.pow(Math.max(0, 1 - dist[o] / (w * 1.25)), 0.6);
-      if (chip) h = Math.max(h, 0.55);
-      height[o] = h;
-    }
-  }
-  parts.getContext('2d').putImageData(pImg, 0, 0);
-  detail.getContext('2d').putImageData(dImg, 0, 0);
-
-  // 盛り上がりから凹凸の画像（法線）を作る
-  const normal = document.createElement('canvas'); normal.width = W; normal.height = S;
-  const nImg = normal.getContext('2d').createImageData(W, S);
-  const pxV = total / S;
-  for (let row = 0; row < S; row++) {
-    const pxU = (2 * Math.PI * Math.max(rowR[row], 0.3)) / W;
-    for (let col = 0; col < W; col++) {
-      const o = row * W + col;
-      const hx = height[row * W + ((col + 1) % W)] - height[row * W + ((col - 1 + W) % W)];
-      const hy = height[Math.min(S - 1, row + 1) * W + col] - height[Math.max(0, row - 1) * W + col];
-      let nx = (-hx / 2 / pxU) * 0.012, ny = (-hy / 2 / pxV) * 0.012, nz = 1;
-      const L = Math.hypot(nx, ny, nz); nx /= L; ny /= L; nz /= L;
-      nImg.data[o * 4] = (nx * 0.5 + 0.5) * 255; nImg.data[o * 4 + 1] = (ny * 0.5 + 0.5) * 255;
-      nImg.data[o * 4 + 2] = (nz * 0.5 + 0.5) * 255; nImg.data[o * 4 + 3] = 255;
-    }
-  }
-  normal.getContext('2d').putImageData(nImg, 0, 0);
-  return { parts, detail, normal, wear: null };
+  paint(sampleDefects(shape));
+  return { parts, detail, normal, wear: null, paint, kintsugi: true };
 }
 
 // 写真の上の印（ピクセル座標）から、形の数値を求める

@@ -122,8 +122,11 @@ export class Viewer {
     this.textSurface = null;
     this.product = p;
     this.partsImg = partsImg;
+    this.vessel = p.vessel || null;
+    this.setPreview(null);
 
     // 部品番号の画像は混ぜずにそのまま読む
+    this.partsTex = partsTex;
     partsTex.flipY = false; partsTex.colorSpace = THREE.NoColorSpace;
     partsTex.magFilter = THREE.NearestFilter; partsTex.minFilter = THREE.NearestFilter; partsTex.generateMipmaps = false;
     detailTex.flipY = false; detailTex.colorSpace = THREE.NoColorSpace; detailTex.anisotropy = 8;
@@ -149,9 +152,11 @@ export class Viewer {
     // 表面の画像が無いモデルでも、UV座標をシェーダーへ渡すために仮の画像を割り当てる
     if (!mat.map) mat.map = detailTex;
     this.normalTex = normalTex;
+    this.normalMapTex = null;
     if (normalTex) {
       normalTex.flipY = false; normalTex.colorSpace = THREE.NoColorSpace; normalTex.anisotropy = 8;
       mat.normalMap = normalTex;
+      this.normalMapTex = normalTex;
       const ns = p.normalScale ?? 1;
       mat.normalScale.set(ns, ns);
     }
@@ -215,6 +220,52 @@ if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
     }
   }
 
+  // ---- 割れと欠けの描き直し（ブラウザの中で組み立てた金継ぎの器だけ） ----
+  canEditDefects() { return !!this.vessel?.kintsugi; }
+  paintDefects(defs) {
+    if (!this.canEditDefects()) return;
+    this.vessel.paint(defs);
+    const c = this.vessel.parts;
+    this.partsImg = { data: c.getContext('2d').getImageData(0, 0, c.width, c.height).data, width: c.width, height: c.height };
+    this.partsTex.needsUpdate = true;
+    if (this.normalMapTex) this.normalMapTex.needsUpdate = true;
+  }
+
+  // 画面上の位置から、器の表面の点を求める（器の座標：単位 cm）
+  surfaceHit(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const hit = this.raycaster.intersectObject(this.mesh, false)[0];
+    if (!hit) return null;
+    const lp = this.mesh.worldToLocal(hit.point.clone());
+    const n = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
+    let theta = Math.atan2(lp.z, lp.x);
+    if (theta < 0) theta += Math.PI * 2;
+    return { theta, y: lp.y, r: Math.hypot(lp.x, lp.z), local: lp, normal: n, part: hit.uv ? this.partAtUv(hit.uv) : -1 };
+  }
+
+  // なぞっている途中の線（器の表面から少し浮かせて描く）
+  setPreview(points) {
+    if (this.preview) { this.preview.parent?.remove(this.preview); this.preview.geometry.dispose(); this.preview = null; }
+    if (!points || points.length < 2 || !this.mesh) return;
+    const pos = points.map(p => p.local.clone().add(p.normal.clone().multiplyScalar(0.06)));
+    const geo = new THREE.BufferGeometry().setFromPoints(pos);
+    this.preview = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xe8b931, depthTest: false }));
+    this.preview.renderOrder = 10;
+    this.mesh.add(this.preview);
+  }
+
+  // 編集の種類：null / 'rotate'（回す） / 'trace'（なぞる） / 'chip'（欠け） / 'erase'（消す）
+  setEditMode(mode) {
+    this.editMode = mode;
+    const drawing = mode && mode !== 'rotate';
+    this.controls.enableRotate = !drawing;
+    this.renderer.domElement.style.cursor = drawing ? 'crosshair' : '';
+    if (drawing) { this.controls.autoRotate = false; this.idleSince = Infinity; }
+    else this.idleSince = performance.now();
+  }
+
   // 使い込みの度合い（0 = 新品 〜 1 = 長年使った姿）
   setAge(a) { this.uniforms.uAge.value = Math.max(0, Math.min(1, a)); }
 
@@ -241,9 +292,25 @@ if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
 
   bindPointer() {
     const el = this.renderer.domElement;
-    let down = null;
-    el.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+    let down = null, editing = false;
+    el.addEventListener('pointerdown', e => {
+      down = { x: e.clientX, y: e.clientY };
+      // 編集中は、器の上を押したところから「なぞる」などの操作にする
+      if (this.editMode && this.editMode !== 'rotate') {
+        const hit = this.surfaceHit(e.clientX, e.clientY);
+        if (hit) { editing = true; el.setPointerCapture(e.pointerId); this.emit('editstart', hit); }
+      }
+    });
+    el.addEventListener('pointermove', e => {
+      if (!editing) return;
+      const hit = this.surfaceHit(e.clientX, e.clientY);
+      if (hit) this.emit('editmove', hit);
+    });
+    const endEdit = () => { if (editing) { editing = false; down = null; this.emit('editend'); return true; } return false; };
+    el.addEventListener('pointercancel', endEdit);
     el.addEventListener('pointerup', e => {
+      if (endEdit()) return;
+      if (this.editMode && this.editMode !== 'rotate') { down = null; return; }
       // 動かさずに離したときだけ「部品を選んだ」とみなす（回転と区別する）
       if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) {
         const idx = this.pick(e.clientX, e.clientY);
@@ -252,7 +319,7 @@ if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
       down = null;
     });
     el.addEventListener('pointermove', e => {
-      if (e.pointerType !== 'mouse' || e.buttons) return;
+      if (e.pointerType !== 'mouse' || e.buttons || (this.editMode && this.editMode !== 'rotate')) return;
       const idx = this.pick(e.clientX, e.clientY);
       el.style.cursor = idx >= 0 ? 'pointer' : 'grab';
       this.emit('hover', { index: idx, x: e.clientX, y: e.clientY });

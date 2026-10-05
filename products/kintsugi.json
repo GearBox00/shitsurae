@@ -4,7 +4,7 @@
   "category": "工芸",
   "partsMapScale": 30,
   "normalScale": 1,
-  "credit": "器の3Dモデル: GearBox がプログラムで作成（割れと欠けの位置は見本です）",
+  "credit": "器の3Dモデル: GearBox がプログラムで作成",
   "materialLabel": "仕上げ",
   "defaultMaterial": "keshi",
   "palettes": {
@@ -422,7 +422,15 @@
         "小ぶり（口径11cmまで）",
         "ふつう（口径13cmまで）",
         "大ぶり（口径15cmまで）"
-      ]
+      ],
+      "shape": {
+        "rim": 12.0,
+        "h": 7.0,
+        "rf": 2.6,
+        "hf": 0.9,
+        "a": 2.6,
+        "p": 1.75
+      }
     },
     {
       "id": "hirazara",
@@ -702,5 +710,11 @@
       "ふつう（口径18cmまで）",
       "大ぶり（口径24cmまで）"
     ]
+  },
+  "defectPricing": {
+    "includedCracks": 3,
+    "includedChips": 1,
+    "perCrack": 3000,
+    "perChip": 2000
   }
 }

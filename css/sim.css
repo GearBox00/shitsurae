@@ -95,6 +95,23 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 .shape-actions { display: flex; align-items: center; gap: 14px; }
 .btn.small { min-height: 38px; padding: 0 14px; font-size: 13px; }
 
+/* 割れの編集 */
+.edit-bar {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3;
+  display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px 10px;
+  background: rgba(28, 35, 33, .82); backdrop-filter: blur(6px); color: var(--paper);
+  padding: 8px 10px; border-radius: 14px; width: max-content; max-width: calc(100% - 24px);
+}
+.edit-modes { display: flex; gap: 2px; background: rgba(238,240,236,.08); border-radius: 999px; padding: 3px; }
+.edit-modes button {
+  border: 0; background: transparent; color: var(--paper); min-height: 38px; padding: 0 12px;
+  border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.edit-modes button[aria-pressed="true"] { background: var(--chalk); color: var(--chalk-ink); }
+.edit-done { grid-column: 2; grid-row: 1; border: 1.5px solid var(--chalk); background: transparent; color: var(--chalk); min-height: 38px; padding: 0 16px; border-radius: 999px; font-weight: 700; cursor: pointer; }
+.edit-hint { grid-column: 1 / -1; margin: 0; font-size: 12px; color: rgba(238,240,236,.85); text-align: center; }
+body.editing .stage-hint, body.editing .views { opacity: .35; }
+
 .photo { width: min(1000px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
 .photo-inner { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); }
 .photo-body { display: grid; grid-template-columns: 1fr 260px; gap: 18px; padding: 16px 22px; overflow-y: auto; }
@@ -261,6 +278,12 @@ dialog::backdrop { background: rgba(20, 30, 27, .55); }
   .fields { grid-template-columns: 1fr; }
   .order-foot .btn { flex: 1; }
   .photo-body { grid-template-columns: 1fr; padding: 12px; }
+  /* 編集中は3Dを縦に広げ、切り替えボタンは1行に詰める */
+  body.editing .stage { height: 70svh; }
+  .edit-bar { top: 6px; padding: 4px; gap: 2px 4px; grid-template-columns: 1fr auto; border-radius: 12px; }
+  .edit-modes button { padding: 0 7px; font-size: 12px; min-height: 36px; }
+  .edit-done { min-height: 36px; padding: 0 10px; font-size: 12px; }
+  .edit-hint { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .order-total { width: 100%; }
 }
 

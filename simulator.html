@@ -27,6 +27,16 @@
     <div class="tip" id="tip" hidden></div>
     <p class="stage-hint">ドラッグで回す ／ 部分をタップで選ぶ</p>
     <div class="views" id="views" role="group" aria-label="向きを変える"></div>
+    <div class="edit-bar" id="editBar" hidden>
+      <div class="edit-modes" role="group" aria-label="割れの編集">
+        <button type="button" data-edit="rotate" aria-pressed="false">回す</button>
+        <button type="button" data-edit="trace" aria-pressed="false">割れをなぞる</button>
+        <button type="button" data-edit="chip" aria-pressed="false">欠けを置く</button>
+        <button type="button" data-edit="erase" aria-pressed="false">消す</button>
+      </div>
+      <p class="edit-hint" id="editHint"></p>
+      <button type="button" class="edit-done" id="editDone">完了</button>
+    </div>
     <div class="history" role="group" aria-label="操作の取り消し">
       <button type="button" id="undoBtn" aria-label="ひとつ戻す" title="ひとつ戻す">↶</button>
       <button type="button" id="redoBtn" aria-label="やり直す" title="やり直す">↷</button>
@@ -49,6 +59,17 @@
       </div>
       <p class="note">横から少し見下ろして撮った写真が向いています。写真はこの端末の中だけで使い、どこにも送信しません。</p>
       <p class="err" id="shapeErr" role="alert"></p>
+    </section>
+
+    <section class="slip-sec" id="defectSec" hidden>
+      <h2 class="sec-title">割れと欠け</h2>
+      <p class="shape-status" id="defectStatus"></p>
+      <div class="shape-actions">
+        <button class="btn ghost small" id="traceBtn" type="button">割れをなぞる</button>
+        <button class="link" id="defectSample" type="button" hidden>見本の割れに戻す</button>
+        <button class="link" id="defectClear" type="button">全部消す</button>
+      </div>
+      <p class="note" id="defectNote"></p>
     </section>
 
     <section class="slip-sec" id="variantSec" hidden>

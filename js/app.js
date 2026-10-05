@@ -1,7 +1,7 @@
 // シミュレーター画面の操作。状態は1つのオブジェクトにまとめ、URLにも書き出す。
 import { Viewer } from './viewer.js';
 import { store, yen, newOrderNo, safeImg } from './store.js';
-import { buildVessel, sanitizeShape } from './vessel.js';
+import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack } from './vessel.js';
 import { openPhotoShape } from './photo-shape.js';
 
 const $ = id => document.getElementById(id);
@@ -21,6 +21,7 @@ function defaultState() {
   if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
   if (P.aging) s.age = 0;
   if (shapeEnabled()) s.shape = null;   // null = 見本の形
+  if (defectsOn()) s.defects = null;    // null = 見本の割れと欠け
   return s;
 }
 
@@ -38,7 +39,35 @@ const variantOf = () => P.variants?.find(v => v.id === state.variant);
 
 // 写真から形を作れる商品（漆は見本の形も組み立てる。金継ぎは写真を使ったときだけ組み立てる）
 const shapeEnabled = () => !!(P.defaultShape || P.photoShape);
-const shapeOf = () => state.shape || P.defaultShape || null;
+const shapeOf = () => state.shape || variantOf()?.shape || P.defaultShape || null;
+
+// ---------- 割れと欠け（金継ぎ） ----------
+const defectsOn = () => P.vesselMode === 'kintsugi';
+const r3 = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
+const roundDefects = d => ({
+  cracks: d.cracks.map(pts => pts.map(([t, y, r]) => [r3(t, 3), r3(y, 2), r3(r, 2)])),
+  chips: d.chips.map(t => r3(t, 3)),
+});
+const currentDefects = () => state.defects || (shapeOf() ? roundDefects(sampleDefects(shapeOf())) : null);
+function sanitizeDefects(d) {
+  if (!d || typeof d !== 'object' || !Array.isArray(d.cracks) || !Array.isArray(d.chips)) return null;
+  const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  if (d.cracks.length > 12 || d.chips.length > 8) return null;
+  const cracks = [];
+  for (const pts of d.cracks) {
+    if (!Array.isArray(pts) || pts.length < 2 || pts.length > 150) return null;
+    for (const p of pts) if (!Array.isArray(p) || p.length !== 3 || !num(p[0], -10, 20) || !num(p[1], -1, 32) || !num(p[2], 0, 21)) return null;
+    cracks.push(pts.map(p => [p[0], p[1], p[2]]));
+  }
+  if (!d.chips.every(t => num(t, -10, 20))) return null;
+  return { cracks, chips: d.chips.slice() };
+}
+function defectSummary(d) {
+  const len = d.cracks.reduce((a, pts) => a + crackLength(pts), 0);
+  return state.defects
+    ? `なぞった割れ ${d.cracks.length}本（合計 ${len.toFixed(1)}cm）・欠け ${d.chips.length}か所`
+    : `見本の割れ（${d.cracks.length}本）・欠け ${d.chips.length}か所`;
+}
 function textCfg() {
   const E = eff();
   if (!shapeOf() || !E.text) return E.text;
@@ -89,6 +118,14 @@ function price() {
   const customs = P.parts.filter(pt => colorOf(pt, state.colors[pt.id]).custom);
   if (customs.length && P.customColor) lines.push({ label: `好きな色 ×${customs.length}`, amount: customs.length * P.customColor.price });
   if (P.text && state.text.value) lines.push({ label: P.text.label, amount: P.text.price });
+  // なぞった割れと欠けが、基本料金に含まれる数より多いときの追加料金
+  const dp = P.defectPricing;
+  if (dp && state.defects) {
+    const extraC = Math.max(0, state.defects.cracks.length - dp.includedCracks);
+    const extraH = Math.max(0, state.defects.chips.length - dp.includedChips);
+    if (extraC) lines.push({ label: `割れの追加 ×${extraC}`, amount: extraC * dp.perCrack });
+    if (extraH) lines.push({ label: `欠けの追加 ×${extraH}`, amount: extraH * dp.perChip });
+  }
   return { lines, total: lines.reduce((a, l) => a + l.amount, 0) };
 }
 
@@ -127,6 +164,7 @@ function sanitize(obj) {
   if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
   if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
   if (shapeEnabled() && obj.shape) s.shape = sanitizeShape(obj.shape);
+  if (defectsOn() && obj.defects) s.defects = sanitizeDefects(obj.defects);
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -136,7 +174,7 @@ function sanitize(obj) {
 }
 
 // ---------- 反映 ----------
-let textTimer, loadedKey, modelQueue = Promise.resolve();
+let textTimer, loadedKey, paintedKey, modelQueue = Promise.resolve();
 function apply() {
   // 器の種類が変わったときだけ、3Dモデルを読み込み直す（連続で押されても順番に処理する）
   modelQueue = modelQueue.then(syncModel).then(applyLooks).catch(e => {
@@ -157,6 +195,9 @@ async function syncModel() {
   await new Promise(r => setTimeout(r, 30));   // 「読み込んでいます」を先に描かせる
   await viewer.loadModel(effModel());
   loadedKey = want;
+  paintedKey = null;
+  if (!viewer.canEditDefects()) exitEdit();
+  renderDefects();
   $('loading').hidden = true;
   renderViews();
   viewer.view('side');
@@ -165,6 +206,11 @@ async function syncModel() {
 
 function applyLooks() {
   viewer.setAge(state.age || 0);
+  // 割れと欠けが変わったときだけ描き直す（器の形は作り直さない）
+  if (viewer.canEditDefects() && shapeOf()) {
+    const key = loadedKey + JSON.stringify(state.defects);
+    if (key !== paintedKey) { viewer.paintDefects(currentDefects()); paintedKey = key; }
+  }
   P.parts.forEach(pt => {
     const c = colorOf(pt, state.colors[pt.id]);
     viewer.setPart(pt.index, c.hex, lookOf(pt, c));
@@ -209,7 +255,25 @@ function renderShape() {
   $('shapeReset').hidden = !sh;
 }
 
+function renderDefects() {
+  if (!defectsOn()) return;
+  // 器の切り替え中（新しい3Dを読み込む前）は、切り替え先の器で判断する
+  const can = !!(shapeOf() && viewer?.canEditDefects());
+  $('traceBtn').disabled = !can;
+  $('defectSample').hidden = !can || !state.defects;
+  $('defectClear').hidden = !can;
+  if (!can) {
+    $('defectStatus').textContent = '見本の割れと欠け';
+    $('defectNote').textContent = 'この器では、割れをなぞる機能は使えません。茶碗か、写真から作った器でお使いください。';
+    return;
+  }
+  $('defectStatus').textContent = defectSummary(currentDefects());
+  const dp = P.defectPricing;
+  $('defectNote').textContent = dp ? `割れ${dp.includedCracks}本・欠け${dp.includedChips}か所までは基本料金に含みます。増えた分は 割れ1本 +${yen(dp.perCrack)}・欠け1か所 +${yen(dp.perChip)}。` : '';
+}
+
 function render() {
+  renderDefects();
   renderShape();
   renderAge();
   renderVariants();
@@ -367,6 +431,33 @@ function renderSaved() {
   });
 }
 
+// ---------- 割れの編集モード ----------
+const EDIT_HINT = {
+  rotate: 'ドラッグで器を回して、なぞりたい面を手前に向けます',
+  trace: '器の上を指やマウスでなぞると、その線が割れになります',
+  chip: '口縁をタップすると、そこに欠けを置きます',
+  erase: '消したい割れや欠けをタップします',
+};
+function setEdit(mode) {
+  viewer.setEditMode(mode);
+  document.querySelectorAll('#editBar [data-edit]').forEach(b => b.setAttribute('aria-pressed', b.dataset.edit === mode));
+  $('editHint').textContent = EDIT_HINT[mode];
+}
+function enterEdit(mode) {
+  if (!viewer.canEditDefects() || !shapeOf()) return;
+  $('editBar').hidden = false;
+  document.body.classList.add('editing');
+  setEdit(mode);
+  if (matchMedia('(max-width: 860px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function exitEdit() {
+  if (!$('editBar') || $('editBar').hidden) return;
+  $('editBar').hidden = true;
+  document.body.classList.remove('editing');
+  viewer.setEditMode(null);
+  viewer.setPreview(null);
+}
+
 function toast(msg) {
   const t = $('toast');
   t.textContent = msg;
@@ -384,8 +475,9 @@ function specRows() {
   });
   const v = variantOf();
   if (v && !state.shape) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
+  if (defectsOn() && viewer?.canEditDefects() && shapeOf()) rows.push(['割れと欠け', esc(defectSummary(currentDefects()))]);
   const sh = shapeOf();
-  if (sh) {
+  if (sh && (state.shape || P.defaultShape)) {
     rows.unshift([P.variantLabel || '形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
   }
   if (P.text && state.text.value) {
@@ -491,6 +583,60 @@ async function main() {
       });
     });
     $('shapeReset').addEventListener('click', () => commit(s => { s.shape = null; }));
+  }
+
+  // 割れをなぞる（金継ぎ）
+  if (defectsOn()) {
+    $('defectSec').hidden = false;
+    $('traceBtn').addEventListener('click', () => enterEdit('trace'));
+    $('defectSample').addEventListener('click', () => commit(s => { s.defects = null; }));
+    $('defectClear').addEventListener('click', () => commit(s => { s.defects = { cracks: [], chips: [] }; }));
+    $('editBar').addEventListener('click', e => {
+      const b = e.target.closest('[data-edit]');
+      if (b) setEdit(b.dataset.edit);
+    });
+    $('editDone').addEventListener('click', exitEdit);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && viewer.editMode) exitEdit(); });
+    let stroke = null;
+    const editDefs = s => (s.defects ? JSON.parse(JSON.stringify(s.defects)) : roundDefects(sampleDefects(shapeOf())));
+    viewer.on('editstart', hit => {
+      const mode = viewer.editMode, sh = shapeOf();
+      if (mode === 'trace') { stroke = [hit]; return; }
+      if (mode === 'chip') {
+        if (hit.y < sh.h - 0.9) { toast('欠けは口縁の近くをタップしてください'); return; }
+        if (currentDefects().chips.length >= 8) { toast('欠けは8か所までです'); return; }
+        commit(s => { const d = editDefs(s); d.chips.push(r3(hit.theta, 3)); s.defects = d; });
+        return;
+      }
+      if (mode === 'erase') {
+        const d = currentDefects();
+        let best = { kind: null, i: -1, d: 0.5 };
+        d.cracks.forEach((pts, i) => { const dd = distToCrack(pts, hit.theta, hit.y, hit.r); if (dd < best.d) best = { kind: 'crack', i, d: dd }; });
+        d.chips.forEach((t, i) => {
+          const dd = Math.abs((((hit.theta - t + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * hit.r;
+          if (hit.y > sh.h - 1.2 && dd < 0.9 && dd < best.d + 0.4) best = { kind: 'chip', i, d: dd };
+        });
+        if (!best.kind) { toast('近くに割れや欠けがありません'); return; }
+        commit(s => { const e = editDefs(s); (best.kind === 'crack' ? e.cracks : e.chips).splice(best.i, 1); s.defects = e; });
+      }
+    });
+    viewer.on('editmove', hit => {
+      if (!stroke) return;
+      if (hit.local.distanceTo(stroke[stroke.length - 1].local) > 0.12) { stroke.push(hit); viewer.setPreview(stroke); }
+    });
+    viewer.on('editend', () => {
+      if (!stroke) return;
+      const pts = stroke; stroke = null;
+      viewer.setPreview(null);
+      let len = 0;
+      for (let i = 1; i < pts.length; i++) len += pts[i].local.distanceTo(pts[i - 1].local);
+      if (pts.length < 2 || len < 0.5) { toast('もう少し長くなぞってください'); return; }
+      if (currentDefects().cracks.length >= 12) { toast('割れは12本までです'); return; }
+      // 点が多すぎるとリンクが長くなるので、120点までに間引く
+      const step = Math.max(1, Math.ceil(pts.length / 120));
+      const kept = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
+      commit(s => { const d = editDefs(s); d.cracks.push(kept.map(p => [r3(p.theta, 3), r3(p.y, 2), r3(p.r, 2)])); s.defects = d; });
+    });
   }
 
   // 使い込みのつまみ（値段や発注書には入れず、見た目だけ変える）
