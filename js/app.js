@@ -15,8 +15,20 @@ function defaultState() {
   const colors = {};
   P.parts.forEach(pt => { colors[pt.id] = pt.default; });
   const material = P.defaultMaterial || Object.keys(P.materials)[0];
-  return { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
+  const s = { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
+  if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
+  return s;
 }
+
+// 器の種類（variants）がある商品は、選んだ種類の設定で上書きした「今の商品」を使う
+function eff() {
+  const v = P.variants?.find(v => v.id === state?.variant);
+  if (!v) return P;
+  const e = { ...P, ...v, name: P.name };
+  if (P.text) e.text = { ...P.text, depth: v.textDepth ?? P.text.depth };
+  return e;
+}
+const variantOf = () => P.variants?.find(v => v.id === state.variant);
 
 // 色の一覧は文字列（#rrggbb）でも、{hex, name, metal} の形でも書けるようにそろえる
 function normalizeProduct(p) {
@@ -42,7 +54,8 @@ function lookOf(pt, c) {
 }
 
 function price() {
-  const lines = [{ label: P.priceLabel || P.name, amount: P.basePrice }];
+  const E = eff();
+  const lines = [{ label: E.priceLabel || E.name, amount: E.basePrice }];
   const mat = P.materials[state.material];
   if (mat.price) lines.push({ label: (P.materialLabel || '素材') + ': ' + mat.name, amount: mat.price });
   P.parts.forEach(pt => {
@@ -87,6 +100,7 @@ function sanitize(obj) {
     if ((P.customColor && /^#[0-9a-f]{6}$/i.test(v)) || P.palettes[pt.palette].some(c => c.id === v)) s.colors[pt.id] = v;
   });
   if (P.materials[obj.material]) s.material = obj.material;
+  if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -96,8 +110,32 @@ function sanitize(obj) {
 }
 
 // ---------- 反映 ----------
-let textTimer;
+let textTimer, loadedVariant, modelQueue = Promise.resolve();
 function apply() {
+  // 器の種類が変わったときだけ、3Dモデルを読み込み直す（連続で押されても順番に処理する）
+  modelQueue = modelQueue.then(syncModel).then(applyLooks).catch(e => {
+    console.error(e);
+    $('loading').hidden = false;
+    $('loading').textContent = '3Dモデルを読み込めませんでした。通信の状態を確かめて、もう一度お試しください。';
+  });
+  history.replaceState(null, '', `?p=${productId}#d=${encodeState()}`);
+  render();
+}
+
+async function syncModel() {
+  if (!P.variants || loadedVariant === state.variant) return;
+  const want = state.variant;
+  $('loading').hidden = false;
+  $('loading').textContent = '器を読み込んでいます';
+  await viewer.loadModel(eff());
+  loadedVariant = want;
+  $('loading').hidden = true;
+  renderViews();
+  viewer.view('side');
+  if (state.variant !== want) return syncModel();
+}
+
+function applyLooks() {
   P.parts.forEach(pt => {
     const c = colorOf(pt, state.colors[pt.id]);
     viewer.setPart(pt.index, c.hex, lookOf(pt, c));
@@ -105,15 +143,29 @@ function apply() {
   clearTimeout(textTimer);
   textTimer = setTimeout(() => {
     if (!P.text) return;
-    const f = P.text.fonts.find(f => f.id === state.text.font);
-    const col = P.text.colors.find(c => c.hex === state.text.color);
-    viewer.setText(P.text, state.text.value, f.css, state.text.color, col?.metal || 0);
+    const E = eff();
+    const f = E.text.fonts.find(f => f.id === state.text.font);
+    const col = E.text.colors.find(c => c.hex === state.text.color);
+    viewer.setText(E.text, state.text.value, f.css, state.text.color, col?.metal || 0);
   }, 200);
-  history.replaceState(null, '', `?p=${productId}#d=${encodeState()}`);
-  render();
+}
+
+function renderViews() {
+  $('views').innerHTML = eff().viewButtons.map(v => `<button type="button" data-view="${esc(v.id)}">${esc(v.label)}</button>`).join('');
+}
+
+function renderVariants() {
+  if (!P.variants) return;
+  $('variants').innerHTML = P.variants.map(v => `
+    <button type="button" class="variant" role="radio" aria-checked="${v.id === state.variant}" data-variant="${esc(v.id)}">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><path d="${esc(v.icon || '')}"/></svg>
+      <span class="variant-name">${esc(v.name)}</span>
+      <span class="variant-meta mono">${yen(v.basePrice)}〜</span>
+    </button>`).join('');
 }
 
 function render() {
+  renderVariants();
   renderParts();
   renderText();
   const { lines, total } = price();
@@ -283,6 +335,8 @@ function specRows() {
     const mat = pt.materials ? `・${P.materials[state.material].name}` : '';
     return [pt.name, `<span class="dot" style="background:${c.hex}"></span>${esc(c.name)}${esc(mat)}`];
   });
+  const v = variantOf();
+  if (v) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
   if (P.text && state.text.value) {
     const f = P.text.fonts.find(f => f.id === state.text.font);
     const col = P.text.colors.find(c => c.hex === state.text.color);
@@ -292,9 +346,9 @@ function specRows() {
 }
 
 function openOrder() {
-  $('shots').innerHTML = P.snapshotViews.map(v => `<img src="${viewer.snapshot(v)}" alt="">`).join('');
+  $('shots').innerHTML = eff().snapshotViews.map(v => `<img src="${viewer.snapshot(v)}" alt="">`).join('');
   $('spec').innerHTML = specRows().map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('');
-  $('sizeSel').innerHTML = '<option value="">選んでください</option>' + P.sizes.map(s => `<option>${s}</option>`).join('');
+  $('sizeSel').innerHTML = '<option value="">選んでください</option>' + eff().sizes.map(s => `<option>${esc(s)}</option>`).join('');
   $('orderErr').textContent = '';
   updateOrderTotal();
   $('orderDlg').showModal();
@@ -315,7 +369,7 @@ function submitOrder() {
   if (missing.length) { $('orderErr').textContent = `${missing.join('・')}を入力してください。`; return; }
   const no = newOrderNo();
   const ok = store.addOrder({
-    no, product: productId, productName: P.name, at: new Date().toISOString(), status: '受付',
+    no, product: productId, productName: P.name + (variantOf() ? ` / ${variantOf().name}` : ''), at: new Date().toISOString(), status: '受付',
     size: $('sizeSel').value + P.sizeUnit, qty: q, name: $('nameInput').value.trim().slice(0, 40), mail: $('mailInput').value.trim().slice(0, 120),
     total: price().total * q, spec: specRows().map(([k, v]) => [k, v.replace(/<[^>]+>/g, '')]),
     state, thumb: viewer.snapshot('side', 360, 236),
@@ -340,15 +394,25 @@ async function main() {
   document.title = `${P.name}のシミュレーター｜しつらえ`;
   $('productName').textContent = P.name;
   $('credit').textContent = P.credit;
-  $('slipNo').textContent = 'No. ' + productId.toUpperCase() + '-' + String(P.basePrice).slice(0, 3);
+  $('slipNo').textContent = 'No. ' + productId.toUpperCase() + '-' + String(P.basePrice ?? P.variants?.[0].basePrice ?? '').slice(0, 3);
   $('sizeLabel').textContent = P.sizeLabel + (P.sizeUnit ? `（${P.sizeUnit}）` : '');
   $('orderBtn').textContent = `${P.sizeLabel}を選んで注文へ`;
   $('orderNote').textContent = P.orderNote || '';
   $('orderNote').hidden = !P.orderNote;
   if (P.text?.placeholder) $('textInput').placeholder = P.text.placeholder;
-  $('views').innerHTML = P.viewButtons.map(v => `<button type="button" data-view="${esc(v.id)}">${esc(v.label)}</button>`).join('');
+  const fromUrl = location.hash.startsWith('#d=') ? decodeState(location.hash.slice(3)) : null;
+  state = fromUrl || defaultState();
+  renderViews();
+  if (P.variants) {
+    $('variantSec').hidden = false;
+    $('variantTitle').textContent = P.variantLabel || '種類';
+    $('variants').addEventListener('click', e => {
+      const b = e.target.closest('[data-variant]');
+      if (b && b.dataset.variant !== state.variant) commit(s => { s.variant = b.dataset.variant; });
+    });
+  }
 
-  viewer = new Viewer($('stage'), P);
+  viewer = new Viewer($('stage'), eff());
   try {
     await viewer.init();
   } catch (e) {
@@ -357,11 +421,9 @@ async function main() {
     return;
   }
   $('loading').hidden = true;
+  loadedVariant = state.variant;
   if (params.has('debug')) window.__viewer = viewer;
   viewer.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
-
-  const fromUrl = location.hash.startsWith('#d=') ? decodeState(location.hash.slice(3)) : null;
-  state = fromUrl || defaultState();
 
   // 配色見本
   P.presets.forEach(pr => {
@@ -388,9 +450,13 @@ async function main() {
       state.text.value = v;
       apply();
     });
+    // 入力欄を離れたときに画面を描き直すと、次に押したボタンのクリックが空振りするため、戻すボタンの状態だけ変える
     $('textInput').addEventListener('change', () => {
-      if (before && before !== JSON.stringify(state)) { undoStack.push(before); redoStack.length = 0; }
-      before = null; render();
+      if (before && before !== JSON.stringify(state)) {
+        undoStack.push(before); redoStack.length = 0;
+        $('undoBtn').disabled = false; $('redoBtn').disabled = true;
+      }
+      before = null;
     });
   } else $('textSec').hidden = true;
 
@@ -414,14 +480,15 @@ async function main() {
     tip.style.transform = `translate(${x - r.left + 14}px, ${y - r.top + 14}px)`;
   });
 
-  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => viewer.view(b.dataset.view)));
+  $('views').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) viewer.view(b.dataset.view); });
   $('undoBtn').addEventListener('click', () => { if (undoStack.length) { redoStack.push(JSON.stringify(state)); restore(undoStack.pop()); } });
   $('redoBtn').addEventListener('click', () => { if (redoStack.length) { undoStack.push(JSON.stringify(state)); restore(redoStack.pop()); } });
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, textarea, select')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); (e.shiftKey ? $('redoBtn') : $('undoBtn')).click(); }
   });
-  $('resetBtn').addEventListener('click', () => commit(s => Object.assign(s, defaultState())));
+  // 「最初に戻す」は配色だけを戻し、選んでいる器の種類はそのままにする
+  $('resetBtn').addEventListener('click', () => commit(s => Object.assign(s, defaultState(), s.variant ? { variant: s.variant } : {})));
   $('shuffleBtn').addEventListener('click', () => commit(s => {
     P.parts.forEach(pt => {
       const pal = P.palettes[pt.palette];

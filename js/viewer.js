@@ -60,33 +60,9 @@ export class Viewer {
     controls.addEventListener('start', () => { this.idleSince = Infinity; controls.autoRotate = false; this.flyTo = null; });
     controls.addEventListener('end', () => { this.idleSince = performance.now(); });
 
-    const [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
-      new GLTFLoader().loadAsync(p.model),
-      loadImageData(p.partsMap),
-      new THREE.TextureLoader().loadAsync(p.partsMap),
-      new THREE.TextureLoader().loadAsync(p.detailMap),
-      p.normalMap ? new THREE.TextureLoader().loadAsync(p.normalMap) : null,
-    ]);
-    this.partsImg = partsImg;
-
-    // 部品番号の画像は混ぜずにそのまま読む
-    partsTex.flipY = false; partsTex.colorSpace = THREE.NoColorSpace;
-    partsTex.magFilter = THREE.NearestFilter; partsTex.minFilter = THREE.NearestFilter; partsTex.generateMipmaps = false;
-    detailTex.flipY = false; detailTex.colorSpace = THREE.NoColorSpace; detailTex.anisotropy = 8;
-
-    const root = gltf.scene;
-    const box = new THREE.Box3().setFromObject(root);
-    const s = 2 / box.getSize(new THREE.Vector3()).length();
-    root.scale.multiplyScalar(s);
-    root.position.sub(box.getCenter(new THREE.Vector3()).multiplyScalar(s));
-    scene.add(root);
-    root.updateMatrixWorld(true);
-
-    this.mesh = null;
-    root.traverse(o => { if (o.isMesh && !this.mesh) this.mesh = o; });
     this.uniforms = {
-      uParts: { value: partsTex },
-      uDetail: { value: detailTex },
+      uParts: { value: null },
+      uDetail: { value: null },
       uScale: { value: p.partsMapScale },
       uColors: { value: Array.from({ length: MAX_PARTS }, () => new THREE.Color(1, 1, 1)) },
       uRough: { value: new Array(MAX_PARTS).fill(0.8) },
@@ -95,9 +71,58 @@ export class Viewer {
       uSel: { value: -1 },
       uPulse: { value: 0 },
     };
+    await this.loadModel(p);
+
+    this.raycaster = new THREE.Raycaster();
+    this.bindPointer();
+    new ResizeObserver(() => this.resize()).observe(this.container);
+    this.resize();
+    renderer.setAnimationLoop(t => this.tick(t));
+  }
+
+  // 3Dモデルと画像を読み込む。器の種類を切り替えるときは、これだけを呼び直す
+  async loadModel(p) {
+    const [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
+      new GLTFLoader().loadAsync(p.model),
+      loadImageData(p.partsMap),
+      new THREE.TextureLoader().loadAsync(p.partsMap),
+      new THREE.TextureLoader().loadAsync(p.detailMap),
+      p.normalMap ? new THREE.TextureLoader().loadAsync(p.normalMap) : null,
+    ]);
+    // 前のモデル・影・文字を片付ける
+    if (this.root) {
+      this.scene.remove(this.root, this.shadow);
+      this.root.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+      [this.uniforms.uParts.value, this.uniforms.uDetail.value, this.normalTex].forEach(t => t?.dispose());
+      this.shadow.geometry.dispose();
+    }
+    if (this.decal) { this.scene.remove(this.decal); this.decal.geometry.dispose(); this.decal = null; }
+    this.textSurface = null;
+    this.product = p;
+    this.partsImg = partsImg;
+
+    // 部品番号の画像は混ぜずにそのまま読む
+    partsTex.flipY = false; partsTex.colorSpace = THREE.NoColorSpace;
+    partsTex.magFilter = THREE.NearestFilter; partsTex.minFilter = THREE.NearestFilter; partsTex.generateMipmaps = false;
+    detailTex.flipY = false; detailTex.colorSpace = THREE.NoColorSpace; detailTex.anisotropy = 8;
+    this.uniforms.uParts.value = partsTex;
+    this.uniforms.uDetail.value = detailTex;
+    this.uniforms.uScale.value = p.partsMapScale;
+
+    const root = this.root = gltf.scene;
+    const box = new THREE.Box3().setFromObject(root);
+    const s = 2 / box.getSize(new THREE.Vector3()).length();
+    root.scale.multiplyScalar(s);
+    root.position.sub(box.getCenter(new THREE.Vector3()).multiplyScalar(s));
+    this.scene.add(root);
+    root.updateMatrixWorld(true);
+
+    this.mesh = null;
+    root.traverse(o => { if (o.isMesh && !this.mesh) this.mesh = o; });
     const mat = this.mesh.material;
     // 表面の画像が無いモデルでも、UV座標をシェーダーへ渡すために仮の画像を割り当てる
     if (!mat.map) mat.map = detailTex;
+    this.normalTex = normalTex;
     if (normalTex) {
       normalTex.flipY = false; normalTex.colorSpace = THREE.NoColorSpace; normalTex.anisotropy = 8;
       mat.normalMap = normalTex;
@@ -113,16 +138,10 @@ export class Viewer {
     const grd = g.createRadialGradient(128, 128, 10, 128, 128, 128);
     grd.addColorStop(0, 'rgba(0,0,0,0.45)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
-    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(...(p.shadow || [2.2, 1.1])), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
-    shadow.rotation.x = -Math.PI / 2; shadow.position.y = min - 0.005;
-    scene.add(shadow);
+    this.shadow = new THREE.Mesh(new THREE.PlaneGeometry(...(p.shadow || [2.2, 1.1])), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sh), transparent: true, depthWrite: false }));
+    this.shadow.rotation.x = -Math.PI / 2; this.shadow.position.y = min - 0.005;
+    this.scene.add(this.shadow);
     this.controls.target.set(0, 0, 0);
-
-    this.raycaster = new THREE.Raycaster();
-    this.bindPointer();
-    new ResizeObserver(() => this.resize()).observe(this.container);
-    this.resize();
-    renderer.setAnimationLoop(t => this.tick(t));
   }
 
   patchMaterial(mat) {

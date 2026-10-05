@@ -73,6 +73,19 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 .sec-row { display: flex; justify-content: space-between; align-items: baseline; }
 .sec-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
 
+.variants { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.variant {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 6px;
+  border: 1px solid var(--rule); background: #fff; border-radius: var(--radius); cursor: pointer; min-height: 44px;
+}
+.variant svg { width: 34px; height: 34px; fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.4; }
+.variant-name { font-size: 13px; font-weight: 700; }
+.variant-meta { font-size: 10px; color: var(--muted); }
+.variant:hover { border-color: var(--ink); }
+.variant[aria-checked="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.variant[aria-checked="true"] svg { fill: var(--chalk); stroke: var(--chalk); }
+.variant[aria-checked="true"] .variant-meta { color: var(--chalk); }
+
 .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .preset {
   display: flex; align-items: center; gap: 10px; text-align: left;

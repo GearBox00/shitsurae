@@ -2,66 +2,252 @@
   "id": "kintsugi",
   "name": "金継ぎの器",
   "category": "工芸",
-  "basePrice": 16500,
-  "priceLabel": "金継ぎ（割れ3か所・欠け1か所）",
-  "model": "assets/models/bowl.glb",
-  "partsMap": "assets/textures/bowl_parts.png",
   "partsMapScale": 30,
-  "detailMap": "assets/textures/bowl_detail.png",
-  "normalMap": "assets/textures/bowl_normal.png",
   "normalScale": 1,
-  "shadow": [1.7, 1.7],
   "credit": "器の3Dモデル: GearBox がプログラムで作成（割れと欠けの位置は見本です）",
   "materialLabel": "仕上げ",
   "defaultMaterial": "keshi",
   "palettes": {
     "glaze": [
-      { "id": "kohiki", "name": "粉引", "hex": "#e9e3d6" },
-      { "id": "hakuji", "name": "白磁", "hex": "#f3f2ee" },
-      { "id": "seihakuji", "name": "青白磁", "hex": "#dbe7e4" },
-      { "id": "seiji", "name": "青磁", "hex": "#9dbcaf" },
-      { "id": "kaiyu", "name": "灰釉", "hex": "#b8b096" },
-      { "id": "shino", "name": "志野", "hex": "#ecdccd" },
-      { "id": "ameyu", "name": "飴釉", "hex": "#7b4421" },
-      { "id": "akaraku", "name": "赤楽", "hex": "#b0573a" },
-      { "id": "oribe", "name": "織部", "hex": "#3e6a49" },
-      { "id": "ruri", "name": "瑠璃", "hex": "#23407a" },
-      { "id": "kokuyu", "name": "黒釉", "hex": "#211e1b" }
+      {
+        "id": "kohiki",
+        "name": "粉引",
+        "hex": "#e9e3d6"
+      },
+      {
+        "id": "hakuji",
+        "name": "白磁",
+        "hex": "#f3f2ee"
+      },
+      {
+        "id": "seihakuji",
+        "name": "青白磁",
+        "hex": "#dbe7e4"
+      },
+      {
+        "id": "seiji",
+        "name": "青磁",
+        "hex": "#9dbcaf"
+      },
+      {
+        "id": "kaiyu",
+        "name": "灰釉",
+        "hex": "#b8b096"
+      },
+      {
+        "id": "shino",
+        "name": "志野",
+        "hex": "#ecdccd"
+      },
+      {
+        "id": "ameyu",
+        "name": "飴釉",
+        "hex": "#7b4421"
+      },
+      {
+        "id": "akaraku",
+        "name": "赤楽",
+        "hex": "#b0573a"
+      },
+      {
+        "id": "oribe",
+        "name": "織部",
+        "hex": "#3e6a49"
+      },
+      {
+        "id": "ruri",
+        "name": "瑠璃",
+        "hex": "#23407a"
+      },
+      {
+        "id": "kokuyu",
+        "name": "黒釉",
+        "hex": "#211e1b"
+      }
     ],
     "clay": [
-      { "id": "akatsuchi", "name": "赤土", "hex": "#8a5233" },
-      { "id": "shiratsuchi", "name": "白土", "hex": "#bfae92" },
-      { "id": "shigaraki", "name": "信楽", "hex": "#a87748" },
-      { "id": "kurotsuchi", "name": "黒土", "hex": "#352e28" }
+      {
+        "id": "akatsuchi",
+        "name": "赤土",
+        "hex": "#8a5233"
+      },
+      {
+        "id": "shiratsuchi",
+        "name": "白土",
+        "hex": "#bfae92"
+      },
+      {
+        "id": "shigaraki",
+        "name": "信楽",
+        "hex": "#a87748"
+      },
+      {
+        "id": "kurotsuchi",
+        "name": "黒土",
+        "hex": "#352e28"
+      }
     ],
     "seam": [
-      { "id": "gold", "name": "金", "hex": "#d9ae52", "metal": 1, "price": 4000 },
-      { "id": "silver", "name": "銀", "hex": "#cfd1d4", "metal": 1, "price": 2000 },
-      { "id": "platinum", "name": "白金", "hex": "#e3ded3", "metal": 1, "price": 7000 },
-      { "id": "tin", "name": "錫", "hex": "#a9aba7", "metal": 0.85, "roughMul": 1.5 },
-      { "id": "shu", "name": "朱漆", "hex": "#b3321d", "roughMul": 0.9 },
-      { "id": "kuro", "name": "黒漆", "hex": "#1c1a18" }
+      {
+        "id": "gold",
+        "name": "金",
+        "hex": "#d9ae52",
+        "metal": 1,
+        "price": 4000
+      },
+      {
+        "id": "silver",
+        "name": "銀",
+        "hex": "#cfd1d4",
+        "metal": 1,
+        "price": 2000
+      },
+      {
+        "id": "platinum",
+        "name": "白金",
+        "hex": "#e3ded3",
+        "metal": 1,
+        "price": 7000
+      },
+      {
+        "id": "tin",
+        "name": "錫",
+        "hex": "#a9aba7",
+        "metal": 0.85,
+        "roughMul": 1.5
+      },
+      {
+        "id": "shu",
+        "name": "朱漆",
+        "hex": "#b3321d",
+        "roughMul": 0.9
+      },
+      {
+        "id": "kuro",
+        "name": "黒漆",
+        "hex": "#1c1a18"
+      }
     ],
     "fill": [
-      { "id": "gold", "name": "金", "hex": "#d9ae52", "metal": 1, "price": 1500 },
-      { "id": "silver", "name": "銀", "hex": "#cfd1d4", "metal": 1, "price": 800 },
-      { "id": "platinum", "name": "白金", "hex": "#e3ded3", "metal": 1, "price": 2500 },
-      { "id": "tin", "name": "錫", "hex": "#a9aba7", "metal": 0.85, "roughMul": 1.5 },
-      { "id": "shu", "name": "朱漆", "hex": "#b3321d", "roughMul": 0.9 },
-      { "id": "kuro", "name": "黒漆", "hex": "#1c1a18" }
+      {
+        "id": "gold",
+        "name": "金",
+        "hex": "#d9ae52",
+        "metal": 1,
+        "price": 1500
+      },
+      {
+        "id": "silver",
+        "name": "銀",
+        "hex": "#cfd1d4",
+        "metal": 1,
+        "price": 800
+      },
+      {
+        "id": "platinum",
+        "name": "白金",
+        "hex": "#e3ded3",
+        "metal": 1,
+        "price": 2500
+      },
+      {
+        "id": "tin",
+        "name": "錫",
+        "hex": "#a9aba7",
+        "metal": 0.85,
+        "roughMul": 1.5
+      },
+      {
+        "id": "shu",
+        "name": "朱漆",
+        "hex": "#b3321d",
+        "roughMul": 0.9
+      },
+      {
+        "id": "kuro",
+        "name": "黒漆",
+        "hex": "#1c1a18"
+      }
     ]
   },
   "parts": [
-    { "id": "outer", "name": "器の外側", "index": 0, "palette": "glaze", "default": "kohiki", "look": { "roughness": 0.16, "detail": 1 } },
-    { "id": "inner", "name": "見込み（内側）", "index": 1, "palette": "glaze", "default": "kohiki", "look": { "roughness": 0.16, "detail": 1 } },
-    { "id": "foot", "name": "高台（土）", "index": 2, "palette": "clay", "default": "akatsuchi", "look": { "roughness": 0.95, "detail": 1 } },
-    { "id": "seam", "name": "継ぎ目", "index": 3, "palette": "seam", "default": "gold", "materials": ["keshi", "maru", "haku"] },
-    { "id": "chip", "name": "欠けの埋め", "index": 4, "palette": "fill", "default": "gold", "materials": ["keshi", "maru", "haku"] }
+    {
+      "id": "outer",
+      "name": "器の外側",
+      "index": 0,
+      "palette": "glaze",
+      "default": "kohiki",
+      "look": {
+        "roughness": 0.16,
+        "detail": 1
+      }
+    },
+    {
+      "id": "inner",
+      "name": "見込み（内側）",
+      "index": 1,
+      "palette": "glaze",
+      "default": "kohiki",
+      "look": {
+        "roughness": 0.16,
+        "detail": 1
+      }
+    },
+    {
+      "id": "foot",
+      "name": "高台（土）",
+      "index": 2,
+      "palette": "clay",
+      "default": "akatsuchi",
+      "look": {
+        "roughness": 0.95,
+        "detail": 1
+      }
+    },
+    {
+      "id": "seam",
+      "name": "継ぎ目",
+      "index": 3,
+      "palette": "seam",
+      "default": "gold",
+      "materials": [
+        "keshi",
+        "maru",
+        "haku"
+      ]
+    },
+    {
+      "id": "chip",
+      "name": "欠けの埋め",
+      "index": 4,
+      "palette": "fill",
+      "default": "gold",
+      "materials": [
+        "keshi",
+        "maru",
+        "haku"
+      ]
+    }
   ],
   "materials": {
-    "keshi": { "name": "消粉（やわらかな艶）", "price": 0, "roughness": 0.42, "detail": 0.8 },
-    "maru": { "name": "丸粉（磨いた強い艶）", "price": 6000, "roughness": 0.14, "detail": 0.3 },
-    "haku": { "name": "箔（はく）貼り", "price": 4000, "roughness": 0.26, "detail": 1.8 }
+    "keshi": {
+      "name": "消粉（やわらかな艶）",
+      "price": 0,
+      "roughness": 0.42,
+      "detail": 0.8
+    },
+    "maru": {
+      "name": "丸粉（磨いた強い艶）",
+      "price": 6000,
+      "roughness": 0.14,
+      "detail": 0.3
+    },
+    "haku": {
+      "name": "箔（はく）貼り",
+      "price": 4000,
+      "roughness": 0.26,
+      "detail": 1.8
+    }
   },
   "text": {
     "part": "foot",
@@ -73,39 +259,384 @@
     "price": 2000,
     "colorLabel": "文字の色",
     "fonts": [
-      { "id": "mincho", "name": "明朝", "css": "700 150px 'Shippori Mincho', serif" },
-      { "id": "fude", "name": "筆", "css": "400 160px 'Yuji Syuku', serif" }
+      {
+        "id": "mincho",
+        "name": "明朝",
+        "css": "700 150px 'Shippori Mincho', serif"
+      },
+      {
+        "id": "fude",
+        "name": "筆",
+        "css": "400 160px 'Yuji Syuku', serif"
+      }
     ],
     "colors": [
-      { "hex": "#d9ae52", "name": "金", "metal": 0.9 },
-      { "hex": "#b3321d", "name": "朱" },
-      { "hex": "#1c1a18", "name": "黒" }
+      {
+        "hex": "#d9ae52",
+        "name": "金",
+        "metal": 0.9
+      },
+      {
+        "hex": "#b3321d",
+        "name": "朱"
+      },
+      {
+        "hex": "#1c1a18",
+        "name": "黒"
+      }
     ]
   },
   "sizeLabel": "器の大きさ",
   "sizeUnit": "",
-  "sizes": ["豆皿・小皿（直径10cmまで）", "茶碗・小鉢（直径14cmまで）", "鉢・大皿（直径20cmまで）"],
+  "sizes": [
+    "小ぶり（口径11cmまで）",
+    "ふつう（口径13cmまで）",
+    "大ぶり（口径15cmまで）"
+  ],
   "orderNote": "ご注文のあと、割れた器と破片をすべて工房へお送りください。届いた器を拝見してから、最終の金額と仕上がりの目安（2〜3か月）をご連絡します。",
   "presets": [
-    { "name": "粉引に金", "colors": { "outer": "kohiki", "inner": "kohiki", "foot": "akatsuchi", "seam": "gold", "chip": "gold" }, "material": "keshi" },
-    { "name": "黒釉に金", "colors": { "outer": "kokuyu", "inner": "kokuyu", "foot": "kurotsuchi", "seam": "gold", "chip": "gold" }, "material": "maru" },
-    { "name": "青磁に銀", "colors": { "outer": "seiji", "inner": "seiji", "foot": "shiratsuchi", "seam": "silver", "chip": "silver" }, "material": "keshi" },
-    { "name": "織部に朱", "colors": { "outer": "oribe", "inner": "shino", "foot": "shigaraki", "seam": "shu", "chip": "shu" }, "material": "keshi" }
+    {
+      "name": "粉引に金",
+      "colors": {
+        "outer": "kohiki",
+        "inner": "kohiki",
+        "foot": "akatsuchi",
+        "seam": "gold",
+        "chip": "gold"
+      },
+      "material": "keshi"
+    },
+    {
+      "name": "黒釉に金",
+      "colors": {
+        "outer": "kokuyu",
+        "inner": "kokuyu",
+        "foot": "kurotsuchi",
+        "seam": "gold",
+        "chip": "gold"
+      },
+      "material": "maru"
+    },
+    {
+      "name": "青磁に銀",
+      "colors": {
+        "outer": "seiji",
+        "inner": "seiji",
+        "foot": "shiratsuchi",
+        "seam": "silver",
+        "chip": "silver"
+      },
+      "material": "keshi"
+    },
+    {
+      "name": "織部に朱",
+      "colors": {
+        "outer": "oribe",
+        "inner": "shino",
+        "foot": "shigaraki",
+        "seam": "shu",
+        "chip": "shu"
+      },
+      "material": "keshi"
+    }
   ],
-  "presetDots": ["outer", "inner", "seam", "chip"],
-  "viewButtons": [
-    { "id": "side", "label": "横" },
-    { "id": "kikomi", "label": "見込み" },
-    { "id": "ware", "label": "割れ" },
-    { "id": "kake", "label": "欠け" },
-    { "id": "bottom", "label": "高台" }
+  "presetDots": [
+    "outer",
+    "inner",
+    "seam",
+    "chip"
   ],
-  "snapshotViews": ["side", "kikomi", "bottom"],
-  "views": {
-    "side": [0.0, 0.95, 3.6],
-    "kikomi": [0.0, 3.6, 1.0],
-    "ware": [2.85, 1.1, 1.8],
-    "kake": [-1.5, 1.35, 2.9],
-    "bottom": [0.0, -3.6, 0.01]
-  }
+  "snapshotViews": [
+    "side",
+    "kikomi",
+    "bottom"
+  ],
+  "variantLabel": "器の種類",
+  "variants": [
+    {
+      "id": "chawan",
+      "name": "茶碗",
+      "size": "口径12cm",
+      "model": "assets/models/bowl.glb",
+      "partsMap": "assets/textures/bowl_parts.png",
+      "detailMap": "assets/textures/bowl_detail.png",
+      "normalMap": "assets/textures/bowl_normal.png",
+      "basePrice": 16500,
+      "priceLabel": "金継ぎ・茶碗（割れ3か所・欠け1か所）",
+      "shadow": [
+        1.7,
+        1.7
+      ],
+      "textDepth": 0.3,
+      "icon": "M6 10 H34 C33 22 28 29 24 30 V34 H16 V30 C12 29 7 22 6 10Z",
+      "viewButtons": [
+        {
+          "id": "side",
+          "label": "横"
+        },
+        {
+          "id": "kikomi",
+          "label": "見込み"
+        },
+        {
+          "id": "ware",
+          "label": "割れ"
+        },
+        {
+          "id": "kake",
+          "label": "欠け"
+        },
+        {
+          "id": "bottom",
+          "label": "高台"
+        }
+      ],
+      "views": {
+        "side": [
+          0.0,
+          0.95,
+          3.6
+        ],
+        "kikomi": [
+          0.0,
+          3.6,
+          1.0
+        ],
+        "ware": [
+          2.85,
+          1.1,
+          1.8
+        ],
+        "kake": [
+          -1.5,
+          1.35,
+          2.9
+        ],
+        "bottom": [
+          0.0,
+          -3.6,
+          0.01
+        ]
+      },
+      "sizes": [
+        "小ぶり（口径11cmまで）",
+        "ふつう（口径13cmまで）",
+        "大ぶり（口径15cmまで）"
+      ]
+    },
+    {
+      "id": "hirazara",
+      "name": "平皿",
+      "size": "直径22cm",
+      "model": "assets/models/plate.glb",
+      "partsMap": "assets/textures/plate_parts.png",
+      "detailMap": "assets/textures/plate_detail.png",
+      "normalMap": "assets/textures/plate_normal.png",
+      "basePrice": 19800,
+      "priceLabel": "金継ぎ・平皿（割れ2本・欠け1か所）",
+      "shadow": [
+        1.6,
+        1.6
+      ],
+      "textDepth": 0.08,
+      "icon": "M3 21 H37 C35 25 30 26 26 26 V29 H14 V26 C10 26 5 25 3 21Z",
+      "viewButtons": [
+        {
+          "id": "side",
+          "label": "横"
+        },
+        {
+          "id": "kikomi",
+          "label": "見込み"
+        },
+        {
+          "id": "ware",
+          "label": "割れ"
+        },
+        {
+          "id": "kake",
+          "label": "欠け"
+        },
+        {
+          "id": "bottom",
+          "label": "高台"
+        }
+      ],
+      "views": {
+        "side": [
+          0.0,
+          1.3,
+          3.2
+        ],
+        "kikomi": [
+          0.0,
+          3.4,
+          0.35
+        ],
+        "ware": [
+          0.6,
+          2.7,
+          2.1
+        ],
+        "kake": [
+          -2.0,
+          1.6,
+          1.7
+        ],
+        "bottom": [
+          0.0,
+          -3.4,
+          0.01
+        ]
+      },
+      "sizes": [
+        "小皿（直径15cmまで）",
+        "中皿（直径22cmまで）",
+        "大皿（直径30cmまで）"
+      ]
+    },
+    {
+      "id": "yunomi",
+      "name": "湯呑み",
+      "size": "高さ9cm",
+      "model": "assets/models/yunomi.glb",
+      "partsMap": "assets/textures/yunomi_parts.png",
+      "detailMap": "assets/textures/yunomi_detail.png",
+      "normalMap": "assets/textures/yunomi_normal.png",
+      "basePrice": 12100,
+      "priceLabel": "金継ぎ・湯呑み（ひび1本・欠け1か所）",
+      "shadow": [
+        1.4,
+        1.4
+      ],
+      "textDepth": 0.3,
+      "icon": "M11 6 H29 C29 20 28 30 26 32 V35 H14 V32 C12 30 11 20 11 6Z",
+      "viewButtons": [
+        {
+          "id": "side",
+          "label": "横"
+        },
+        {
+          "id": "kikomi",
+          "label": "見込み"
+        },
+        {
+          "id": "ware",
+          "label": "割れ"
+        },
+        {
+          "id": "kake",
+          "label": "欠け"
+        },
+        {
+          "id": "bottom",
+          "label": "高台"
+        }
+      ],
+      "views": {
+        "side": [
+          0.0,
+          0.8,
+          4.02
+        ],
+        "kikomi": [
+          0.0,
+          4.02,
+          1.03
+        ],
+        "ware": [
+          2.64,
+          1.03,
+          2.76
+        ],
+        "kake": [
+          -3.45,
+          1.38,
+          -1.72
+        ],
+        "bottom": [
+          0.0,
+          -4.02,
+          0.01
+        ]
+      },
+      "sizes": [
+        "小ぶり（高さ7cmまで）",
+        "ふつう（高さ9cmまで）",
+        "大ぶり（高さ12cmまで）"
+      ]
+    },
+    {
+      "id": "tokkuri",
+      "name": "徳利",
+      "size": "高さ14cm",
+      "model": "assets/models/tokkuri.glb",
+      "partsMap": "assets/textures/tokkuri_parts.png",
+      "detailMap": "assets/textures/tokkuri_detail.png",
+      "normalMap": "assets/textures/tokkuri_normal.png",
+      "basePrice": 17600,
+      "priceLabel": "金継ぎ・徳利（首の割れ・欠け1か所）",
+      "shadow": [
+        1.3,
+        1.3
+      ],
+      "textDepth": 0.25,
+      "icon": "M17 3 H23 C22 6 21 8 21 10 C27 13 30 18 30 25 C30 31 27 34 24 34 V36 H16 V34 C13 34 10 31 10 25 C10 18 13 13 19 10 C19 8 18 6 17 3Z",
+      "viewButtons": [
+        {
+          "id": "side",
+          "label": "横"
+        },
+        {
+          "id": "kikomi",
+          "label": "口"
+        },
+        {
+          "id": "ware",
+          "label": "割れ"
+        },
+        {
+          "id": "kake",
+          "label": "欠け"
+        },
+        {
+          "id": "bottom",
+          "label": "高台"
+        }
+      ],
+      "views": {
+        "side": [
+          0.0,
+          0.52,
+          4.14
+        ],
+        "kikomi": [
+          0.0,
+          3.91,
+          0.92
+        ],
+        "ware": [
+          3.22,
+          1.38,
+          2.18
+        ],
+        "kake": [
+          -3.68,
+          1.84,
+          0.52
+        ],
+        "bottom": [
+          0.0,
+          -4.14,
+          0.01
+        ]
+      },
+      "sizes": [
+        "一合（高さ13cmまで）",
+        "二合（高さ17cmまで）",
+        "三合（高さ20cmまで）"
+      ]
+    }
+  ],
+  "defaultVariant": "chawan"
 }
