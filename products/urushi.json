@@ -1,0 +1,93 @@
+{
+  "id": "urushi",
+  "name": "漆のお椀",
+  "category": "工芸",
+  "basePrice": 8800,
+  "priceLabel": "汁椀（一客）",
+  "model": "assets/models/owan.glb",
+  "partsMap": "assets/textures/owan_parts.png",
+  "partsMapScale": 30,
+  "detailMap": "assets/textures/owan_detail.png",
+  "normalMap": "assets/textures/owan_normal.png",
+  "wearMap": "assets/textures/owan_wear.png",
+  "shadow": [1.7, 1.7],
+  "credit": "お椀の3Dモデル: 写真1枚から GearBox が形を割り出して作成（口径12cmと仮定）",
+  "materialLabel": "仕上げ",
+  "defaultMaterial": "nuritate",
+  "palettes": {
+    "urushi": [
+      { "id": "kuro", "name": "黒（真塗）", "hex": "#141110", "under": "#5b3c26", "aged": "#1f1814" },
+      { "id": "shu", "name": "朱", "hex": "#9c2416", "under": "#161212", "aged": "#b0331f" },
+      { "id": "tame", "name": "溜塗", "hex": "#3a1610", "under": "#9c2416", "aged": "#7a2a17", "price": 1000 },
+      { "id": "araishu", "name": "洗朱", "hex": "#b5583a", "under": "#161212", "aged": "#c46a47" },
+      { "id": "bengara", "name": "弁柄", "hex": "#7a2a1c", "under": "#161212", "aged": "#93402c" },
+      { "id": "shiro", "name": "白漆", "hex": "#d6c9a8", "under": "#5b3c26", "aged": "#c9a56c", "price": 1500 },
+      { "id": "kijiro", "name": "木地呂（拭き漆）", "hex": "#6a3f22", "under": "#b08158", "aged": "#8a5430" }
+    ]
+  },
+  "parts": [
+    { "id": "outer", "name": "外側", "index": 0, "palette": "urushi", "default": "kuro", "materials": ["nuritate", "roiro", "tsuyakeshi"] },
+    { "id": "inner", "name": "内側", "index": 1, "palette": "urushi", "default": "shu", "materials": ["nuritate", "roiro", "tsuyakeshi"] },
+    { "id": "rim", "name": "縁", "index": 3, "palette": "urushi", "default": "kuro", "materials": ["nuritate", "roiro", "tsuyakeshi"] },
+    { "id": "foot", "name": "高台", "index": 2, "palette": "urushi", "default": "kuro", "materials": ["nuritate", "roiro", "tsuyakeshi"] }
+  ],
+  "materials": {
+    "nuritate": { "name": "塗り立て（ふっくらした艶）", "price": 0, "roughness": 0.16, "detail": 1 },
+    "roiro": { "name": "呂色（鏡のような艶）", "price": 5000, "roughness": 0.05, "detail": 0.3 },
+    "tsuyakeshi": { "name": "艶消し（しっとり）", "price": 2000, "roughness": 0.48, "detail": 1 }
+  },
+  "aging": {
+    "label": "使い込んだ姿を見る",
+    "note": "漆は使うほど艶が増し、色が深まります。擦れやすい縁や高台から、下の塗りがのぞいてくるのも味わいです。",
+    "stops": [
+      { "at": 0, "label": "新品" },
+      { "at": 0.2, "label": "1年" },
+      { "at": 0.45, "label": "5年" },
+      { "at": 0.7, "label": "10年" },
+      { "at": 1, "label": "20年" }
+    ]
+  },
+  "text": {
+    "part": "foot",
+    "facing": "bottom",
+    "depth": 0.3,
+    "label": "高台の内側に名入れ（蒔絵）",
+    "placeholder": "例: 花",
+    "maxLength": 4,
+    "price": 3000,
+    "colorLabel": "蒔絵の色",
+    "fonts": [
+      { "id": "mincho", "name": "明朝", "css": "700 150px 'Shippori Mincho', serif" },
+      { "id": "fude", "name": "筆", "css": "400 160px 'Yuji Syuku', serif" }
+    ],
+    "colors": [
+      { "hex": "#d9ae52", "name": "金", "metal": 0.9 },
+      { "hex": "#cfd1d4", "name": "銀", "metal": 0.9 },
+      { "hex": "#9c2416", "name": "朱" }
+    ]
+  },
+  "sizeLabel": "大きさ",
+  "sizeUnit": "",
+  "sizes": ["小ぶり（口径11cm）", "ふつう（口径12cm）", "大ぶり（口径13cm）"],
+  "orderNote": "漆器はひとつずつ手で塗り重ねるため、お届けまで約2か月かかります（デモの仮の値です）。",
+  "presets": [
+    { "name": "外黒内朱", "colors": { "outer": "kuro", "inner": "shu", "rim": "kuro", "foot": "kuro" }, "material": "nuritate", "age": 0 },
+    { "name": "根来塗り（20年）", "colors": { "outer": "shu", "inner": "shu", "rim": "shu", "foot": "shu" }, "material": "nuritate", "age": 1 },
+    { "name": "溜塗（5年）", "colors": { "outer": "tame", "inner": "tame", "rim": "tame", "foot": "tame" }, "material": "nuritate", "age": 0.45 },
+    { "name": "洗朱に黒縁", "colors": { "outer": "araishu", "inner": "araishu", "rim": "kuro", "foot": "kuro" }, "material": "tsuyakeshi", "age": 0 }
+  ],
+  "presetDots": ["outer", "inner", "rim", "foot"],
+  "viewButtons": [
+    { "id": "side", "label": "横" },
+    { "id": "kikomi", "label": "見込み" },
+    { "id": "naname", "label": "斜め" },
+    { "id": "bottom", "label": "高台" }
+  ],
+  "snapshotViews": ["side", "naname", "bottom"],
+  "views": {
+    "side": [0.0, 0.85, 3.6],
+    "kikomi": [0.0, 3.6, 1.0],
+    "naname": [2.3, 2.0, 2.3],
+    "bottom": [0.0, -3.6, 0.01]
+  }
+}

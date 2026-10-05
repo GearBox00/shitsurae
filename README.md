@@ -8,7 +8,8 @@
 ## 収録しているシミュレーター
 
 1. ランニングスニーカー（8部位・素材3種・かかとの刺しゅう）
-2. 金継ぎの器（継ぎ目と欠けの色・仕上げ・高台の銘）
+2. 金継ぎの器（茶碗・平皿・湯呑み・徳利。継ぎ目と欠けの色・仕上げ・高台の銘）
+3. 漆のお椀（外・内・縁・高台の塗り分け、使い込んだ姿の表示、蒔絵の名入れ）
 
 ## デモとしての注意
 
@@ -19,6 +20,6 @@
 
 1. 靴の3Dモデル: Shopify「Materials Variants Shoe」（Khronos glTF Sample Assets、CC BY 4.0）を部位に分けて使用
    https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/MaterialsVariantsShoe
-2. 器の3Dモデル: GearBox がプログラムで作成
+2. 器の3Dモデル: GearBox がプログラムで作成。漆のお椀は、写真1枚から断面の形を割り出して作成（写真は同梱していません）
 3. three.js 0.186.1（MIT License）を `vendor/` に同梱
 4. 書体: Google Fonts（Zen Kaku Gothic New、Dela Gothic One、IBM Plex Mono、Shippori Mincho、Yuji Syuku、Caveat）

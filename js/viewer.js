@@ -68,6 +68,11 @@ export class Viewer {
       uRough: { value: new Array(MAX_PARTS).fill(0.8) },
       uDetailAmt: { value: new Array(MAX_PARTS).fill(1) },
       uMetal: { value: new Array(MAX_PARTS).fill(0) },
+      uUnder: { value: Array.from({ length: MAX_PARTS }, () => new THREE.Color(1, 1, 1)) },
+      uAged: { value: Array.from({ length: MAX_PARTS }, () => new THREE.Color(1, 1, 1)) },
+      uWearMap: { value: null },
+      uWearOn: { value: 0 },
+      uAge: { value: 0 },
       uSel: { value: -1 },
       uPulse: { value: 0 },
     };
@@ -89,10 +94,13 @@ export class Viewer {
       new THREE.TextureLoader().loadAsync(p.detailMap),
       p.normalMap ? new THREE.TextureLoader().loadAsync(p.normalMap) : null,
     ]);
+    // 使い込みの表現に使う「擦れやすさの地図」（無い商品では使わない）
+    const wearTex = p.wearMap ? await new THREE.TextureLoader().loadAsync(p.wearMap) : null;
     // 前のモデル・影・文字を片付ける
     if (this.root) {
       this.scene.remove(this.root, this.shadow);
       this.root.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
+      if (this.uniforms.uWearMap.value === this.uniforms.uDetail.value) this.uniforms.uWearMap.value = null;
       [this.uniforms.uParts.value, this.uniforms.uDetail.value, this.normalTex].forEach(t => t?.dispose());
       this.shadow.geometry.dispose();
     }
@@ -108,6 +116,10 @@ export class Viewer {
     this.uniforms.uParts.value = partsTex;
     this.uniforms.uDetail.value = detailTex;
     this.uniforms.uScale.value = p.partsMapScale;
+    this.uniforms.uWearMap.value?.dispose?.();
+    if (wearTex) { wearTex.flipY = false; wearTex.colorSpace = THREE.NoColorSpace; }
+    this.uniforms.uWearMap.value = wearTex || detailTex;
+    this.uniforms.uWearOn.value = wearTex ? 1 : 0;
 
     const root = this.root = gltf.scene;
     const box = new THREE.Box3().setFromObject(root);
@@ -152,13 +164,23 @@ export class Viewer {
         .replace('#include <common>', `#include <common>
 uniform sampler2D uParts; uniform sampler2D uDetail; uniform float uScale;
 uniform vec3 uColors[${MAX_PARTS}]; uniform float uRough[${MAX_PARTS}]; uniform float uDetailAmt[${MAX_PARTS}]; uniform float uMetal[${MAX_PARTS}];
+uniform vec3 uUnder[${MAX_PARTS}]; uniform vec3 uAged[${MAX_PARTS}];
+uniform sampler2D uWearMap; uniform float uWearOn; uniform float uAge;
 uniform float uSel; uniform float uPulse;`)
         .replace('#include <map_fragment>', `
 int ip = clamp(int(floor(texture2D(uParts, vMapUv).r * 255.0 / uScale + 0.5)), 0, ${MAX_PARTS - 1});
 float dt = mix(1.0, texture2D(uDetail, vMapUv).r * 2.0, uDetailAmt[ip]);
-diffuseColor.rgb *= uColors[ip] * dt;`)
+// 使い込み：上塗りの色は年月で深まり（uAged）、擦れやすい所から下の塗り（uUnder）がのぞく
+float wv = texture2D(uWearMap, vMapUv).r;
+float th = 1.03 - uAge * 0.62;
+float worn = uWearOn * smoothstep(th, th + 0.07, wv);
+vec3 topCol = mix(uColors[ip], uAged[ip], uAge * uWearOn);
+diffuseColor.rgb *= mix(topCol, uUnder[ip], worn) * dt;`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = clamp(roughnessFactor * uRough[ip], 0.05, 1.0);`)
+roughnessFactor = clamp(roughnessFactor * uRough[ip], 0.05, 1.0);
+// 漆は使い込むほど艶が増す。擦れて下地が出た所は艶が落ちる
+roughnessFactor *= mix(1.0, 0.55, uAge * uWearOn);
+roughnessFactor = mix(roughnessFactor, 0.55, worn);`)
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
 metalnessFactor = uMetal[ip];`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
@@ -174,8 +196,13 @@ if (ip == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;`);
       this.uniforms.uRough.value[index] = look.roughness ?? 0.8;
       this.uniforms.uDetailAmt.value[index] = look.detail ?? 1;
       this.uniforms.uMetal.value[index] = look.metal ?? 0;
+      this.uniforms.uUnder.value[index].set(look.under || hex);
+      this.uniforms.uAged.value[index].set(look.aged || hex);
     }
   }
+
+  // 使い込みの度合い（0 = 新品 〜 1 = 長年使った姿）
+  setAge(a) { this.uniforms.uAge.value = Math.max(0, Math.min(1, a)); }
 
   select(index) {
     this.selected = index;

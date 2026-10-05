@@ -17,6 +17,7 @@ function defaultState() {
   const material = P.defaultMaterial || Object.keys(P.materials)[0];
   const s = { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
   if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
+  if (P.aging) s.age = 0;
   return s;
 }
 
@@ -44,13 +45,14 @@ function normalizeProduct(p) {
 function colorOf(part, value) {
   if (value?.startsWith('#')) return { hex: value, name: '好きな色 ' + value.toUpperCase(), custom: true, price: 0 };
   const c = P.palettes[part.palette].find(c => c.id === value) || P.palettes[part.palette][0];
-  return { hex: c.hex, name: c.name, custom: false, metal: c.metal || 0, roughMul: c.roughMul || 1, price: c.price || 0 };
+  return { hex: c.hex, name: c.name, custom: false, metal: c.metal || 0, roughMul: c.roughMul || 1, price: c.price || 0,
+    under: c.under, aged: c.aged, underName: c.underName };
 }
 
 // 部位の質感 = 素材（または部位の標準）× 色ごとの金属らしさ
 function lookOf(pt, c) {
   const base = pt.materials ? P.materials[state.material] : (pt.look || { roughness: 0.8, detail: 1 });
-  return { roughness: base.roughness * (c.roughMul || 1), detail: base.detail, metal: c.metal || 0 };
+  return { roughness: base.roughness * (c.roughMul || 1), detail: base.detail, metal: c.metal || 0, under: c.under, aged: c.aged };
 }
 
 function price() {
@@ -101,6 +103,7 @@ function sanitize(obj) {
   });
   if (P.materials[obj.material]) s.material = obj.material;
   if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
+  if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -136,6 +139,7 @@ async function syncModel() {
 }
 
 function applyLooks() {
+  viewer.setAge(state.age || 0);
   P.parts.forEach(pt => {
     const c = colorOf(pt, state.colors[pt.id]);
     viewer.setPart(pt.index, c.hex, lookOf(pt, c));
@@ -164,7 +168,16 @@ function renderVariants() {
     </button>`).join('');
 }
 
+function renderAge() {
+  if (!P.aging) return;
+  const v = Math.round((state.age || 0) * 100);
+  if (+$('ageRange').value !== v) $('ageRange').value = v;
+  const stop = P.aging.stops.reduce((a, b) => (Math.abs(b.at - state.age) < Math.abs(a.at - state.age) ? b : a));
+  $('ageLabel').textContent = stop.label;
+}
+
 function render() {
+  renderAge();
   renderVariants();
   renderParts();
   renderText();
@@ -425,6 +438,27 @@ async function main() {
   if (params.has('debug')) window.__viewer = viewer;
   viewer.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+  // 使い込みのつまみ（値段や発注書には入れず、見た目だけ変える）
+  if (P.aging) {
+    $('ageSec').hidden = false;
+    $('ageTitle').textContent = P.aging.label;
+    $('ageNote').textContent = P.aging.note || '';
+    $('ageTicks').innerHTML = P.aging.stops.map(s => `<span style="left:${s.at * 100}%">${esc(s.label)}</span>`).join('');
+    // 動かし始めた時点の状態を覚えておき、手を離したときに「ひとつ戻す」の履歴へ積む（指・マウス・キーボード共通）
+    let before = null;
+    $('ageRange').addEventListener('input', e => {
+      if (before === null) before = JSON.stringify(state);
+      state.age = +e.target.value / 100;
+      viewer.setAge(state.age);
+      renderAge();
+      history.replaceState(null, '', `?p=${productId}#d=${encodeState()}`);
+    });
+    $('ageRange').addEventListener('change', () => {
+      if (before && before !== JSON.stringify(state)) { undoStack.push(before); redoStack.length = 0; $('undoBtn').disabled = false; $('redoBtn').disabled = true; }
+      before = null;
+    });
+  }
+
   // 配色見本
   P.presets.forEach(pr => {
     const b = document.createElement('button');
@@ -435,7 +469,10 @@ async function main() {
       return `<i style="background:${colorOf(pt, pr.colors[id]).hex}"></i>`;
     }).join('');
     b.innerHTML = `<span class="preset-dots">${dots}</span>${esc(pr.name)}`;
-    b.addEventListener('click', () => commit(s => { Object.assign(s.colors, pr.colors); s.material = pr.material; }));
+    b.addEventListener('click', () => commit(s => {
+      Object.assign(s.colors, pr.colors); s.material = pr.material;
+      if (P.aging && typeof pr.age === 'number') s.age = pr.age;
+    }));
     $('presets').appendChild(b);
   });
 
