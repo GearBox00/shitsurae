@@ -20,32 +20,35 @@ function defaultState() {
   const s = { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
   if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
   if (P.aging) s.age = 0;
-  if (P.defaultShape) s.shape = null;   // null = 見本の形
+  if (shapeEnabled()) s.shape = null;   // null = 見本の形
   return s;
 }
 
 // 器の種類（variants）がある商品は、選んだ種類の設定で上書きした「今の商品」を使う
 function eff() {
   const v = P.variants?.find(v => v.id === state?.variant);
-  if (!v) return P;
-  const e = { ...P, ...v, name: P.name };
-  if (P.text) e.text = { ...P.text, depth: v.textDepth ?? P.text.depth };
+  // 写真から作った器を使っているときは、写真用の設定（価格・向き・大きさ）で上書きする
+  const photo = state?.shape && P.photoShape;
+  if (!v && !photo) return P;
+  const e = { ...P, ...(v || {}), ...(photo ? P.photoShape : {}), name: P.name };
+  if (P.text) e.text = { ...P.text, depth: (photo ? null : v?.textDepth) ?? P.text.depth };
   return e;
 }
 const variantOf = () => P.variants?.find(v => v.id === state.variant);
 
-// 形を組み立てる商品（写真から形を作れる商品）
-const shapeOf = () => state.shape || P.defaultShape;
+// 写真から形を作れる商品（漆は見本の形も組み立てる。金継ぎは写真を使ったときだけ組み立てる）
+const shapeEnabled = () => !!(P.defaultShape || P.photoShape);
+const shapeOf = () => state.shape || P.defaultShape || null;
 function textCfg() {
   const E = eff();
-  if (!P.defaultShape || !E.text) return E.text;
+  if (!shapeOf() || !E.text) return E.text;
   // 底が浅い器では、銘を貼る深さを浅くしないと内側の底に写り込む
   const sh = shapeOf();
   return { ...E.text, depth: Math.min(0.3, (Math.min(sh.hf + 0.5, sh.h - 0.4) * 0.8) / (2 * sh.rf)) };
 }
 function effModel() {
   const E = eff();
-  if (P.defaultShape) { E.vessel = buildVessel(shapeOf()); E.text = textCfg(); }
+  if (shapeOf()) { E.vessel = buildVessel(shapeOf(), { mode: P.vesselMode || 'lacquer' }); E.text = textCfg(); }
   return E;
 }
 const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null]);
@@ -123,7 +126,7 @@ function sanitize(obj) {
   if (P.materials[obj.material]) s.material = obj.material;
   if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
   if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
-  if (P.defaultShape && obj.shape) s.shape = sanitizeShape(obj.shape);
+  if (shapeEnabled() && obj.shape) s.shape = sanitizeShape(obj.shape);
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -183,7 +186,7 @@ function renderViews() {
 function renderVariants() {
   if (!P.variants) return;
   $('variants').innerHTML = P.variants.map(v => `
-    <button type="button" class="variant" role="radio" aria-checked="${v.id === state.variant}" data-variant="${esc(v.id)}">
+    <button type="button" class="variant" role="radio" aria-checked="${!state.shape && v.id === state.variant}" data-variant="${esc(v.id)}">
       <svg viewBox="0 0 40 40" aria-hidden="true"><path d="${esc(v.icon || '')}"/></svg>
       <span class="variant-name">${esc(v.name)}</span>
       <span class="variant-meta mono">${yen(v.basePrice)}〜</span>
@@ -199,9 +202,10 @@ function renderAge() {
 }
 
 function renderShape() {
-  if (!P.defaultShape) return;
+  if (!shapeEnabled()) return;
   const sh = state.shape;
-  $('shapeStatus').textContent = sh ? `写真から作った形（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm）` : (P.defaultShapeLabel || '見本の形');
+  const sample = P.defaultShapeLabel || (variantOf() ? `見本の器（${variantOf().name}）` : '見本の形');
+  $('shapeStatus').textContent = sh ? `写真から作った形（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm）` : sample;
   $('shapeReset').hidden = !sh;
 }
 
@@ -379,10 +383,10 @@ function specRows() {
     return [pt.name, `<span class="dot" style="background:${c.hex}"></span>${esc(c.name)}${esc(mat)}`];
   });
   const v = variantOf();
-  if (v) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
-  if (P.defaultShape) {
-    const sh = shapeOf();
-    rows.unshift(['形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
+  if (v && !state.shape) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
+  const sh = shapeOf();
+  if (sh) {
+    rows.unshift([P.variantLabel || '形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
   }
   if (P.text && state.text.value) {
     const f = P.text.fonts.find(f => f.id === state.text.font);
@@ -416,7 +420,7 @@ function submitOrder() {
   if (missing.length) { $('orderErr').textContent = `${missing.join('・')}を入力してください。`; return; }
   const no = newOrderNo();
   const ok = store.addOrder({
-    no, product: productId, productName: P.name + (variantOf() ? ` / ${variantOf().name}` : ''), at: new Date().toISOString(), status: '受付',
+    no, product: productId, productName: P.name + (state.shape ? ' / 写真から作った器' : variantOf() ? ` / ${variantOf().name}` : ''), at: new Date().toISOString(), status: '受付',
     size: $('sizeSel').value + P.sizeUnit, qty: q, name: $('nameInput').value.trim().slice(0, 40), mail: $('mailInput').value.trim().slice(0, 120),
     total: price().total * q, spec: specRows().map(([k, v]) => [k, v.replace(/<[^>]+>/g, '')]),
     state, thumb: viewer.snapshot('side', 360, 236),
@@ -455,7 +459,8 @@ async function main() {
     $('variantTitle').textContent = P.variantLabel || '種類';
     $('variants').addEventListener('click', e => {
       const b = e.target.closest('[data-variant]');
-      if (b && b.dataset.variant !== state.variant) commit(s => { s.variant = b.dataset.variant; });
+      // 写真から作った器を使っているときに種類を押したら、その見本の器に戻す
+      if (b && (b.dataset.variant !== state.variant || state.shape)) commit(s => { s.variant = b.dataset.variant; if (s.shape) s.shape = null; });
     });
   }
 
@@ -473,14 +478,14 @@ async function main() {
   viewer.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // 写真から器の形を作る（写真はこの端末の中だけで使う）
-  if (P.defaultShape) {
+  if (shapeEnabled()) {
     $('shapeSec').hidden = false;
     $('photoInput').addEventListener('change', e => {
       const file = e.target.files[0];
       e.target.value = '';   // 同じ写真を選び直しても反応するように
       $('shapeErr').textContent = '';
       openPhotoShape(file, {
-        rim: shapeOf().rim,
+        rim: shapeOf()?.rim || P.photoShape?.defaultRim || 12,
         onApply: shape => commit(s => { s.shape = shape; }),
         onError: msg => { $('shapeErr').textContent = msg; },
       });

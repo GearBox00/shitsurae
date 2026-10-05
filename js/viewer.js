@@ -97,8 +97,8 @@ export class Viewer {
       partsImg = { data: pc.getImageData(0, 0, v.parts.width, v.parts.height).data, width: v.parts.width, height: v.parts.height };
       partsTex = new THREE.CanvasTexture(v.parts);
       detailTex = new THREE.CanvasTexture(v.detail);
-      wearTex = new THREE.CanvasTexture(v.wear);
-      normalTex = null;
+      wearTex = v.wear ? new THREE.CanvasTexture(v.wear) : null;
+      normalTex = v.normal ? new THREE.CanvasTexture(v.normal) : null;
     } else {
       [gltf, partsImg, partsTex, detailTex, normalTex] = await Promise.all([
         new GLTFLoader().loadAsync(p.model),

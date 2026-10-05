@@ -638,5 +638,69 @@
       ]
     }
   ],
-  "defaultVariant": "chawan"
+  "defaultVariant": "chawan",
+  "vesselMode": "kintsugi",
+  "photoShape": {
+    "basePrice": 16500,
+    "priceLabel": "金継ぎ・写真から作った器（割れ3か所・欠け1か所）",
+    "defaultRim": 12,
+    "shadow": [
+      1.7,
+      1.7
+    ],
+    "viewButtons": [
+      {
+        "id": "side",
+        "label": "横"
+      },
+      {
+        "id": "kikomi",
+        "label": "見込み"
+      },
+      {
+        "id": "ware",
+        "label": "割れ"
+      },
+      {
+        "id": "kake",
+        "label": "欠け"
+      },
+      {
+        "id": "bottom",
+        "label": "高台"
+      }
+    ],
+    "views": {
+      "side": [
+        0.0,
+        0.95,
+        3.6
+      ],
+      "kikomi": [
+        0.0,
+        3.6,
+        1.0
+      ],
+      "ware": [
+        2.85,
+        1.1,
+        1.8
+      ],
+      "kake": [
+        -1.5,
+        1.35,
+        2.9
+      ],
+      "bottom": [
+        0.0,
+        -3.6,
+        0.01
+      ]
+    },
+    "sizes": [
+      "小ぶり（口径12cmまで）",
+      "ふつう（口径18cmまで）",
+      "大ぶり（口径24cmまで）"
+    ]
+  }
 }

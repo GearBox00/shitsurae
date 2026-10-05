@@ -74,7 +74,8 @@ function fbm(n, x, y, oct) {
   return v / (1 - Math.pow(0.5, oct));
 }
 
-export function buildVessel(shape, texSize = 1024) {
+// mode: 'lacquer'（漆：外・内・高台・縁、擦れやすさの地図つき）か 'kintsugi'（金継ぎ：外・内・高台・継ぎ目・欠け）
+export function buildVessel(shape, { mode = 'lacquer', texSize = 1024 } = {}) {
   const segs = profileSegments(shape);
   // 断面の長さから v を決める
   let total = 0;
@@ -143,6 +144,8 @@ export function buildVessel(shape, texSize = 1024) {
     rowKind[row] = b[3];
   }
 
+  if (mode === 'kintsugi') return { geometry, ...kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) };
+
   // 部位：外側0・内側1・高台2・縁3（縁の近くも縁にする）
   const parts = document.createElement('canvas');
   parts.width = 4; parts.height = S;   // 部位は角度によらないので、横は細くてよい
@@ -196,6 +199,131 @@ export function buildVessel(shape, texSize = 1024) {
   wg.putImageData(wimg, 0, 0);
 
   return { geometry, parts, detail, wear };
+}
+
+// ---------- 金継ぎ用：割れ・欠け・継ぎ目の盛り上がり ----------
+function mulberry32(a) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// 割れの線：口縁から下へ、なめらかに蛇行する（揺れの「速さ」をゆっくり変える）
+function crackLine(rand, t0, y0, y1, drift, n) {
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand());
+  const pts = [];
+  let vel = 0, acc = 0;
+  for (let i = 0; i < n; i++) {
+    const q = i / (n - 1);
+    pts.push([t0 + drift * q + acc, y0 + (y1 - y0) * q]);
+    vel = vel * 0.88 + gauss() * 0.006;
+    acc += vel;
+  }
+  return pts;
+}
+
+function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
+  const W = S;   // 横（回転角）も細かく持つ（割れは角度で変わるため）
+  const H = shape.h, R = shape.rim / 2;
+  const floorY = Math.min(shape.hf + 0.5, H - 0.4);
+  const yLow = Math.min(H - 0.3, Math.max(floorY + 0.45, shape.hf + 0.3, H * 0.22));
+  const rand = mulberry32(7);
+  // 茶碗の見本と同じ並び：長い割れ・反対側の短い割れ・枝分かれ（高さは器に合わせる）
+  const a = crackLine(rand, 0.55, H + 0.3, yLow, 0.45, 70);
+  const b = crackLine(rand, 3.55, H + 0.3, Math.max(yLow, H * 0.5), -0.35, 70);
+  const at = a[26];
+  const c = [at, ...crackLine(rand, at[0], at[1], Math.min(at[1] - 0.2, Math.max(yLow, H * 0.38)), 0.75, 40).slice(1)];
+  const lines = [a, b, c];
+
+  const SEAM_W = 0.055;
+  const dist = new Float32Array(W * S).fill(99);
+  const wob = (th, y) => 1 + 0.25 * Math.sin(th * 37 + y * 5.1) * Math.sin(y * 13 + th * 3);
+  for (const pts of lines) {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [t0, y0] = pts[i], [t1, y1] = pts[i + 1];
+      const lo = Math.min(y0, y1) - 0.3, hi = Math.max(y0, y1) + 0.3;
+      for (let row = 0; row < S; row++) {
+        const Y = rowY[row];
+        if (Y < lo || Y > hi) continue;
+        const rr = Math.max(rowR[row], 0.3);
+        const span = 0.35 / rr + Math.abs(t1 - t0);          // 調べる角度の幅（線の近くだけ）
+        const c0 = Math.floor(((t0 - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((t0 + span) / (2 * Math.PI)) * W);
+        const db = ((t1 - t0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const qx = db * rr, qy = y1 - y0, L = qx * qx + qy * qy + 1e-9;
+        for (let col = c0; col <= c1; col++) {
+          const cc = ((col % W) + W) % W;
+          const th = ((cc + 0.5) / W) * 2 * Math.PI;
+          const da = ((th - t0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+          const px = da * rr, py = Y - y0;
+          const k = Math.max(0, Math.min(1, (px * qx + py * qy) / L));
+          const d = Math.hypot(px - k * qx, py - k * qy);
+          const o = row * W + cc;
+          if (d < dist[o]) dist[o] = d;
+        }
+      }
+    }
+  }
+
+  // 部位・質感・凹凸を1画素ずつ決める
+  const parts = document.createElement('canvas'); parts.width = W; parts.height = S;
+  const detail = document.createElement('canvas'); detail.width = W; detail.height = S;
+  const pImg = parts.getContext('2d').createImageData(W, S);
+  const dImg = detail.getContext('2d').createImageData(W, S);
+  const height = new Float32Array(W * S);
+  const nGlaze = makeNoise(1), nClay = makeNoise(2), nGold = makeNoise(3);
+  const CH_T = 2.05, CH_W = Math.min(0.75, R * 0.14), CH_D = Math.min(0.55, H * 0.12);
+  const PART = { outer: 0, rim: 0, inner: 1, foot: 2 };
+  for (let row = 0; row < S; row++) {
+    const kind = rowKind[row], Y = rowY[row], rr = Math.max(rowR[row], 0.3);
+    for (let col = 0; col < W; col++) {
+      const o = row * W + col, th = ((col + 0.5) / W) * 2 * Math.PI;
+      let part = PART[kind];
+      const w = SEAM_W * wob(th, Y);
+      if (dist[o] < w) part = 3;
+      const da = ((th - CH_T + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+      const cx = da * rr;
+      const edge = CH_D * (1 - (cx / CH_W) ** 2) * (1 + 0.18 * Math.sin(cx * 9));
+      const chip = kind !== 'foot' && Math.abs(cx) < CH_W && Y > H - edge;
+      if (chip) part = 4;
+      pImg.data[o * 4] = part * 30; pImg.data[o * 4 + 3] = 255;
+      // 質感：釉薬は下のほうで溜まって少し濃く、高台の土はざらつき、金はわずかなむら
+      let dv = 1;
+      const u = col / W, v = row / S;
+      if (part <= 1) dv += (fbm(nGlaze, u * 10, v * 10, 4) - 0.5) * 0.14 - (kind === 'outer' ? Math.max(0, Math.min(1, (shape.hf + 1.5 - Y) / 1.5)) * 0.22 : 0);
+      else if (part === 2) dv += (fbm(nClay, u * 60, v * 60, 3) - 0.5) * 0.5;
+      else dv += (fbm(nGold, u * 120, v * 120, 2) - 0.5) * 0.12;
+      const dvb = Math.max(0, Math.min(255, Math.round(dv * 128)));
+      dImg.data[o * 4] = dImg.data[o * 4 + 1] = dImg.data[o * 4 + 2] = dvb; dImg.data[o * 4 + 3] = 255;
+      // 盛り上がり：継ぎ目は細い尾根、欠けの埋めは平らに少し高い
+      let h = Math.pow(Math.max(0, 1 - dist[o] / (w * 1.25)), 0.6);
+      if (chip) h = Math.max(h, 0.55);
+      height[o] = h;
+    }
+  }
+  parts.getContext('2d').putImageData(pImg, 0, 0);
+  detail.getContext('2d').putImageData(dImg, 0, 0);
+
+  // 盛り上がりから凹凸の画像（法線）を作る
+  const normal = document.createElement('canvas'); normal.width = W; normal.height = S;
+  const nImg = normal.getContext('2d').createImageData(W, S);
+  const pxV = total / S;
+  for (let row = 0; row < S; row++) {
+    const pxU = (2 * Math.PI * Math.max(rowR[row], 0.3)) / W;
+    for (let col = 0; col < W; col++) {
+      const o = row * W + col;
+      const hx = height[row * W + ((col + 1) % W)] - height[row * W + ((col - 1 + W) % W)];
+      const hy = height[Math.min(S - 1, row + 1) * W + col] - height[Math.max(0, row - 1) * W + col];
+      let nx = (-hx / 2 / pxU) * 0.012, ny = (-hy / 2 / pxV) * 0.012, nz = 1;
+      const L = Math.hypot(nx, ny, nz); nx /= L; ny /= L; nz /= L;
+      nImg.data[o * 4] = (nx * 0.5 + 0.5) * 255; nImg.data[o * 4 + 1] = (ny * 0.5 + 0.5) * 255;
+      nImg.data[o * 4 + 2] = (nz * 0.5 + 0.5) * 255; nImg.data[o * 4 + 3] = 255;
+    }
+  }
+  normal.getContext('2d').putImageData(nImg, 0, 0);
+  return { parts, detail, normal, wear: null };
 }
 
 // 写真の上の印（ピクセル座標）から、形の数値を求める
