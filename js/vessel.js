@@ -23,32 +23,46 @@ export function sanitizeShape(s) {
 
 const T = 0.45; // 器の厚み（cm）
 
+// 内側の底の高さ
+export const floorOf = s => s.floorY ?? Math.min(s.hf + 0.5, s.h - 0.4);
+
 function profileSegments(s) {
-  const R = s.rim / 2;
+  const t = s.t ?? T;
   const seg = [];
-  const fi = Math.max(s.rf - 0.45, 0.3);
-  seg.push(['foot', [[0, 0.3], [fi, 0.3]]]);
-  seg.push(['foot', [[fi, 0.3], [fi, 0]]]);
+  const fi = s.footIn ?? Math.max(s.rf - 0.45, 0.3), rc = s.recess ?? 0.3;
+  seg.push(['foot', [[0, rc], [fi, rc]]]);
+  seg.push(['foot', [[fi, rc], [fi, 0]]]);
   seg.push(['foot', [[fi, 0], [s.rf, 0]]]);
   seg.push(['foot', [[s.rf, 0], [s.rf, s.hf]]]);
-  const outer = [[s.rf, s.hf]];
-  for (let i = 1; i <= 90; i++) {
-    const t = i / 90;
-    outer.push([s.a + (R - s.a) * (1 - Math.pow(1 - t, s.p)), s.hf + (s.h - s.hf) * t]);
+  // 外側：点の並びがあればそれを使い、無ければ式（口に向かって素直に開く曲線）で作る
+  let outer;
+  if (s.outer) outer = s.outer.map(p => p.slice());
+  else {
+    const R = s.rim / 2;
+    outer = [[s.rf, s.hf]];
+    for (let i = 1; i <= 90; i++) {
+      const q = i / 90;
+      outer.push([s.a + (R - s.a) * (1 - Math.pow(1 - q, s.p)), s.hf + (s.h - s.hf) * q]);
+    }
   }
   seg.push(['outer', outer]);
+  const Rl = outer[outer.length - 1][0], bulge = s.rimBulge ?? 0.8;
   const rim = [];
   for (let i = 0; i < 16; i++) {
     const ang = (Math.PI * i) / 15;
-    rim.push([R - T / 2 + (T / 2) * Math.cos(ang), s.h + (T / 2) * Math.sin(ang) * 0.8]);
+    rim.push([Rl - t / 2 + (t / 2) * Math.cos(ang), s.h + (t / 2) * Math.sin(ang) * bulge]);
   }
   seg.push(['rim', rim]);
-  const floorY = Math.min(s.hf + 0.5, s.h - 0.4);
-  const inner = outer.slice().reverse().map(([r, y]) => [Math.max(r - T, 0), Math.max(y, floorY)]);
-  const r0 = inner[inner.length - 1][0];
-  for (let k = 1; k < 12; k++) {
-    const q = k / 11;
-    inner.push([r0 * (1 - q), floorY - 0.08 * Math.sin((q * Math.PI) / 2)]);
+  let inner;
+  if (s.inner) inner = s.inner.map(p => p.slice());
+  else {
+    const floorY = floorOf(s);
+    inner = outer.slice().reverse().map(([r, y]) => [Math.max(r - t, 0), Math.max(y, floorY)]);
+    const r0 = inner[inner.length - 1][0];
+    for (let k = 1; k < 12; k++) {
+      const q = k / 11;
+      inner.push([r0 * (1 - q), floorY - 0.08 * Math.sin((q * Math.PI) / 2)]);
+    }
   }
   seg.push(['inner', inner]);
   return seg;
@@ -216,6 +230,14 @@ const wrapPi = a => ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI
 
 // 器の外側の、高さ y での半径
 export function outerRadiusAt(shape, y) {
+  if (shape.outer) {
+    const o = shape.outer;
+    if (y >= o[o.length - 1][1]) return o[o.length - 1][0];
+    if (y <= o[0][1]) return o[0][0];
+    for (let i = 1; i < o.length; i++) {
+      if (o[i][1] >= y) { const q = (y - o[i - 1][1]) / ((o[i][1] - o[i - 1][1]) || 1); return o[i - 1][0] + (o[i][0] - o[i - 1][0]) * q; }
+    }
+  }
   const R = shape.rim / 2;
   if (y >= shape.h) return R;
   if (y <= shape.hf) return shape.rf;
@@ -223,8 +245,21 @@ export function outerRadiusAt(shape, y) {
   return shape.a + (R - shape.a) * (1 - Math.pow(1 - t, shape.p));
 }
 
-// 見本の割れと欠け（茶碗の見本と同じ並びを、器の高さと大きさに合わせる）
+// 内側（上の面）の、半径 r での高さ（平皿の真上から見た割れに使う）
+function innerHeightAt(shape, r) {
+  const inner = profileSegments(shape).find(([k]) => k === 'inner')[1];   // 口縁から中心へ
+  if (r >= inner[0][0]) return shape.h;
+  for (let i = 1; i < inner.length; i++) {
+    const [ra, ya] = inner[i - 1], [rb, yb] = inner[i];
+    if ((ra - r) * (rb - r) <= 0) { const q = (r - ra) / ((rb - ra) || 1); return ya + (yb - ya) * q; }
+  }
+  return inner[inner.length - 1][1];
+}
+
+// 見本の割れと欠け。器の設定に sample があればその並び、無ければ茶碗の並びを器の高さと大きさに合わせる。
+// 点は [回転角θ, 高さy, 半径r, 貫く向き]。貫く向き 0 = 横（壁の内と外）、1 = 縦（平らな面の上と下）
 export function sampleDefects(shape) {
+  if (shape.sample || shape.cracks) return designedSample(shape);
   const H = shape.h;
   const floorY = Math.min(shape.hf + 0.5, H - 0.4);
   const yLow = Math.min(H - 0.3, Math.max(floorY + 0.45, shape.hf + 0.3, H * 0.22));
@@ -235,7 +270,7 @@ export function sampleDefects(shape) {
     let vel = 0, acc = 0;
     for (let i = 0; i < n; i++) {
       const q = i / (n - 1), y = y0 + (y1 - y0) * q;
-      pts.push([t0 + drift * q + acc, y, outerRadiusAt(shape, y)]);
+      pts.push([t0 + drift * q + acc, y, outerRadiusAt(shape, y), 0]);
       vel = vel * 0.88 + gauss() * 0.006;
       acc += vel;
     }
@@ -246,6 +281,52 @@ export function sampleDefects(shape) {
   const at = a[26];
   const c = [at, ...line(at[0], at[1], Math.min(at[1] - 0.2, Math.max(yLow, H * 0.38)), 0.75, 40).slice(1)];
   return { cracks: [a, b, c], chips: [2.05] };
+}
+
+function designedSample(shape) {
+  const H = shape.h;
+  const rand = mulberry32(shape.seed ?? 7);
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand());
+  const walk = (n, wobble) => {
+    const out = []; let vel = 0, acc = 0;
+    for (let i = 0; i < n; i++) { out.push(acc); vel = vel * 0.88 + gauss() * wobble; acc += vel; }
+    return out;
+  };
+  const cyl = (t0, y0, y1, drift, n) => {
+    const w = walk(n, 0.006);
+    return Array.from({ length: n }, (_, i) => {
+      const q = i / (n - 1), y = y0 + (y1 - y0) * q;
+      return [t0 + drift * q + w[i], y, outerRadiusAt(shape, y), 0];
+    });
+  };
+  // 真上から見た直線を、上の面の点に変える
+  const plan = (a, b, n) => {
+    const w = walk(n, 0.012);
+    const dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz);
+    const px = -dz / L, pz = dx / L;
+    return Array.from({ length: n }, (_, i) => {
+      const q = i / (n - 1), x = a[0] + dx * q + px * w[i], z = a[1] + dz * q + pz * w[i];
+      let th = Math.atan2(z, x); if (th < 0) th += 2 * Math.PI;
+      const r = Math.min(Math.hypot(x, z), shape.rim / 2);
+      return [th, innerHeightAt(shape, r), r, 1];
+    });
+  };
+  const toXZ = p => [p[2] * Math.cos(p[0]), p[2] * Math.sin(p[0])];
+  const lines = [];
+  for (const c of shape.cracks || []) {
+    if (c.type === 'cyl') lines.push(cyl(c.t0, H + 0.3, c.y1, c.drift, c.n));
+    else if (c.type === 'branch') { const at = lines[c.of][c.at]; lines.push([at, ...cyl(at[0], at[1], c.y1, c.drift, c.n).slice(1)]); }
+    else if (c.type === 'plan') lines.push(plan(c.a, c.b, c.n));
+    else if (c.type === 'planbranch') { const at = lines[c.of][c.at]; lines.push([at, ...plan(toXZ(at), c.b, c.n).slice(1)]); }
+  }
+  return { cracks: lines, chips: (shape.chips || [2.05]).slice() };
+}
+
+// 点の貫く向きに応じて、器の厚みの分の差を数えない距離。
+// 平らな面（上下に貫く）は、平皿の裏の高台の内側まで届くよう 1cm まで許す
+const THRU_V = 1.0;
+function throughDist(dX, dY, dZ, axis) {
+  return axis === 1 ? Math.hypot(dX, Math.max(0, Math.abs(dY) - THRU_V), dZ) : Math.hypot(dX, dY, Math.max(0, Math.abs(dZ) - T * 1.15));
 }
 
 // 割れの長さ（cm）
@@ -264,12 +345,12 @@ export function distToCrack(pts, t, y, r) {
   let best = 99;
   const rr = Math.max(r, 0.3);
   for (let i = 0; i < pts.length - 1; i++) {
-    const [ta, ya, ra] = pts[i], [tb, yb, rb] = pts[i + 1];
+    const [ta, ya, ra, ax = 0] = pts[i], [tb, yb, rb] = pts[i + 1];
     const X = wrapPi(t - ta) * rr, Xb = wrapPi(tb - ta) * rr;
     const Py = y - ya, Qy = yb - ya, Pz = r - ra, Qz = rb - ra;
     const L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
     const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
-    const d = Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
+    const d = throughDist(X - k * Xb, Py - k * Qy, Pz - k * Qz, ax);
     if (d < best) best = d;
   }
   return best;
@@ -336,7 +417,7 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
 
   // ---- 割れと欠けを描く（描き直しのたびに呼ぶ） ----
   const SEAM_W = 0.055;
-  const CH_W = Math.min(0.75, R * 0.14), CH_D = Math.min(0.55, H * 0.12);
+  const CH_W = shape.chip?.w ?? Math.min(0.75, R * 0.14), CH_D = shape.chip?.d ?? Math.min(0.55, H * 0.12);
   const wob = (th, y) => 1 + 0.25 * Math.sin(th * 37 + y * 5.1) * Math.sin(y * 13 + th * 3);
   const dist = new Float32Array(W * S);
   const height = new Float32Array(W * S);
@@ -352,14 +433,15 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
     // 割れ：線の近くの画素だけ距離を測る
     for (const pts of defs.cracks || []) {
       for (let i = 0; i < pts.length - 1; i++) {
-        const [ta, ya, ra] = pts[i], [tb, yb, rb] = pts[i + 1];
-        const lo = Math.min(ya, yb) - 0.35, hi = Math.max(ya, yb) + 0.35;
+        const [ta, ya, ra, ax = 0] = pts[i], [tb, yb, rb] = pts[i + 1];
+        const lo = Math.min(ya, yb) - 0.35 - (ax === 1 ? THRU_V : 0), hi = Math.max(ya, yb) + 0.35 + (ax === 1 ? THRU_V : 0);
         const dTheta = wrapPi(tb - ta);
         for (let row = 0; row < S; row++) {
           const Y = rowY[row];
           if (Y < lo || Y > hi) continue;
           const Rp = rowR[row], rr = Math.max(Rp, 0.3);
           if (Math.abs(Rp - ra) > Math.abs(rb - ra) + T * 1.15 + 0.4 && Math.abs(Rp - rb) > T * 1.15 + 0.4) continue;
+          // 線の点が器の外（半径の外）にはみ出している所は、その器の外側の半径で考える
           const span = 0.4 / rr + Math.abs(dTheta);
           const tMid = ta + dTheta / 2;
           const c0 = Math.floor(((tMid - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((tMid + span) / (2 * Math.PI)) * W);
@@ -368,7 +450,7 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
             const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
             const X = wrapPi(th - ta) * rr, Py = Y - ya, Pz = Rp - ra;
             const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
-            const d = Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
+            const d = throughDist(X - k * Xb, Py - k * Qy, Pz - k * Qz, ax);
             const o = row * W + cc;
             if (d < 0.2) { if (d < dist[o]) dist[o] = d; touch(o); }
           }

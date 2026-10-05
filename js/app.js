@@ -1,7 +1,7 @@
 // シミュレーター画面の操作。状態は1つのオブジェクトにまとめ、URLにも書き出す。
 import { Viewer } from './viewer.js';
 import { store, yen, newOrderNo, safeImg } from './store.js';
-import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack } from './vessel.js';
+import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf } from './vessel.js';
 import { openPhotoShape } from './photo-shape.js';
 
 const $ = id => document.getElementById(id);
@@ -45,7 +45,7 @@ const shapeOf = () => state.shape || variantOf()?.shape || P.defaultShape || nul
 const defectsOn = () => P.vesselMode === 'kintsugi';
 const r3 = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
 const roundDefects = d => ({
-  cracks: d.cracks.map(pts => pts.map(([t, y, r]) => [r3(t, 3), r3(y, 2), r3(r, 2)])),
+  cracks: d.cracks.map(pts => pts.map(([t, y, r, a = 0]) => [r3(t, 3), r3(y, 2), r3(r, 2), a])),
   chips: d.chips.map(t => r3(t, 3)),
 });
 const currentDefects = () => state.defects || (shapeOf() ? roundDefects(sampleDefects(shapeOf())) : null);
@@ -56,8 +56,11 @@ function sanitizeDefects(d) {
   const cracks = [];
   for (const pts of d.cracks) {
     if (!Array.isArray(pts) || pts.length < 2 || pts.length > 150) return null;
-    for (const p of pts) if (!Array.isArray(p) || p.length !== 3 || !num(p[0], -10, 20) || !num(p[1], -1, 32) || !num(p[2], 0, 21)) return null;
-    cracks.push(pts.map(p => [p[0], p[1], p[2]]));
+    for (const p of pts) {
+      if (!Array.isArray(p) || (p.length !== 3 && p.length !== 4) || !num(p[0], -10, 20) || !num(p[1], -1, 32) || !num(p[2], 0, 21)) return null;
+      if (p.length === 4 && p[3] !== 0 && p[3] !== 1) return null;
+    }
+    cracks.push(pts.map(p => [p[0], p[1], p[2], p[3] ?? 0]));
   }
   if (!d.chips.every(t => num(t, -10, 20))) return null;
   return { cracks, chips: d.chips.slice() };
@@ -73,7 +76,7 @@ function textCfg() {
   if (!shapeOf() || !E.text) return E.text;
   // 底が浅い器では、銘を貼る深さを浅くしないと内側の底に写り込む
   const sh = shapeOf();
-  return { ...E.text, depth: Math.min(0.3, (Math.min(sh.hf + 0.5, sh.h - 0.4) * 0.8) / (2 * sh.rf)) };
+  return { ...E.text, depth: Math.min(0.3, (Math.min(floorOf(sh), sh.h - 0.4) * 0.8) / (2 * sh.rf)) };
 }
 function effModel() {
   const E = eff();
@@ -119,7 +122,7 @@ function price() {
   if (customs.length && P.customColor) lines.push({ label: `好きな色 ×${customs.length}`, amount: customs.length * P.customColor.price });
   if (P.text && state.text.value) lines.push({ label: P.text.label, amount: P.text.price });
   // なぞった割れと欠けが、基本料金に含まれる数より多いときの追加料金
-  const dp = P.defectPricing;
+  const dp = eff().defectPricing;
   if (dp && state.defects) {
     const extraC = Math.max(0, state.defects.cracks.length - dp.includedCracks);
     const extraH = Math.max(0, state.defects.chips.length - dp.includedChips);
@@ -268,7 +271,7 @@ function renderDefects() {
     return;
   }
   $('defectStatus').textContent = defectSummary(currentDefects());
-  const dp = P.defectPricing;
+  const dp = eff().defectPricing;
   $('defectNote').textContent = dp ? `割れ${dp.includedCracks}本・欠け${dp.includedChips}か所までは基本料金に含みます。増えた分は 割れ1本 +${yen(dp.perCrack)}・欠け1か所 +${yen(dp.perChip)}。` : '';
 }
 
@@ -577,7 +580,8 @@ async function main() {
       e.target.value = '';   // 同じ写真を選び直しても反応するように
       $('shapeErr').textContent = '';
       openPhotoShape(file, {
-        rim: shapeOf()?.rim || P.photoShape?.defaultRim || 12,
+        // 写真の器を使っていればその口径、無ければ写真用の初期値（徳利の口径などを引き継がない）
+        rim: state.shape?.rim || P.photoShape?.defaultRim || shapeOf()?.rim || 12,
         onApply: shape => commit(s => { s.shape = shape; }),
         onError: msg => { $('shapeErr').textContent = msg; },
       });
@@ -635,7 +639,8 @@ async function main() {
       // 点が多すぎるとリンクが長くなるので、120点までに間引く
       const step = Math.max(1, Math.ceil(pts.length / 120));
       const kept = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
-      commit(s => { const d = editDefs(s); d.cracks.push(kept.map(p => [r3(p.theta, 3), r3(p.y, 2), r3(p.r, 2)])); s.defects = d; });
+      // 平らな面（上向き・下向き）でなぞった点は上下に、壁でなぞった点は内外に器を貫く
+      commit(s => { const d = editDefs(s); d.cracks.push(kept.map(p => [r3(p.theta, 3), r3(p.y, 2), r3(p.r, 2), Math.abs(p.normal.y) > 0.7 ? 1 : 0])); s.defects = d; });
     });
   }
 
