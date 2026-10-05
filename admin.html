@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>受注一覧｜しつらえ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<header class="abar">
+  <a class="brand" href="index.html"><span class="brand-mark">し</span>しつらえ</a>
+  <span class="abar-label">お店の管理画面</span>
+  <a class="btn ghost" href="simulator.html?p=shoe">シミュレーターへ</a>
+</header>
+<main class="admin">
+  <div class="admin-head">
+    <h1>受注一覧</h1>
+    <p class="note">デモのため、この端末で受け付けた注文だけが表示されます。本番ではお店のサーバーにまとめて保存し、担当者全員が同じ一覧を見られる形にします。</p>
+  </div>
+  <section class="stats" aria-label="集計">
+    <div class="stat"><span>注文数</span><strong class="mono" id="sCount">0</strong></div>
+    <div class="stat"><span>売上合計（税込）</span><strong class="mono" id="sSum">¥0</strong></div>
+    <div class="stat"><span>今月</span><strong class="mono" id="sMonth">¥0</strong></div>
+    <div class="stat"><span>制作待ち</span><strong class="mono" id="sTodo">0</strong></div>
+  </section>
+  <div class="filters">
+    <label>状態で絞り込む
+      <select id="fStatus"><option value="">すべて</option><option>受付</option><option>制作中</option><option>発送済み</option></select>
+    </label>
+    <button class="link" id="clearBtn" type="button">デモの注文をすべて消す</button>
+  </div>
+  <div id="list" class="orders"></div>
+  <div id="empty" class="empty" hidden>
+    <p>まだ注文がありません。</p>
+    <a class="btn primary" href="simulator.html?p=shoe">シミュレーターで注文してみる</a>
+  </div>
+</main>
+<script type="module">
+import { store, yen, safeImg } from './js/store.js';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STATUSES = ['受付', '制作中', '発送済み'];
+
+function render() {
+  const all = store.orders();
+  const now = new Date();
+  $('sCount').textContent = all.length;
+  $('sSum').textContent = yen(all.reduce((a, o) => a + o.total, 0));
+  $('sMonth').textContent = yen(all.filter(o => { const d = new Date(o.at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).reduce((a, o) => a + o.total, 0));
+  $('sTodo').textContent = all.filter(o => o.status !== '発送済み').length;
+  const f = $('fStatus').value;
+  const list = f ? all.filter(o => o.status === f) : all;
+  $('empty').hidden = all.length > 0;
+  $('list').innerHTML = '';
+  if (all.length && !list.length) $('list').innerHTML = '<p class="note">この状態の注文はありません。</p>';
+  list.forEach(o => {
+    const d = new Date(o.at);
+    const el = document.createElement('details');
+    el.className = 'order-row';
+    el.innerHTML = `
+      <summary>
+        <img src="${safeImg(o.thumb)}" alt="">
+        <span class="o-main"><span class="mono o-no">${esc(o.no)}</span><span class="o-name">${esc(o.name)} 様</span></span>
+        <span class="o-meta">${esc(o.productName)}<br>${esc(o.size)} × ${esc(o.qty)}</span>
+        <span class="o-date mono">${d.toLocaleDateString('ja-JP')} ${d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+        <strong class="mono o-total">${yen(o.total)}</strong>
+        <select class="o-status" aria-label="${esc(o.no)}の状態">${STATUSES.map(s => `<option ${s === o.status ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      </summary>
+      <div class="o-detail">
+        <table>${o.spec.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>
+        <p class="note">連絡先: ${esc(o.mail)}</p>
+        <a class="btn ghost" href="simulator.html?p=${encodeURIComponent(o.product)}#d=${encodeState(o.state)}">このデザインを開く</a>
+      </div>`;
+    const sel = el.querySelector('.o-status');
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', () => { store.updateOrder(o.no, { status: sel.value }); render(); });
+    $('list').appendChild(el);
+  });
+}
+function encodeState(state) {
+  const bytes = new TextEncoder().encode(JSON.stringify(state));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+$('fStatus').addEventListener('change', render);
+$('clearBtn').addEventListener('click', () => { if (confirm('この端末に記録したデモの注文をすべて消します。よろしいですか。')) { store.clearOrders(); render(); } });
+render();
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>シミュレーター｜しつらえ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat&family=Dela+Gothic+One&family=Shippori+Mincho:wght@700&family=Yuji+Syuku&family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sim.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body class="sim">
+<header class="bar">
+  <a class="brand" href="index.html" aria-label="しつらえ トップへ"><span class="brand-mark">し</span>しつらえ</a>
+  <p class="bar-title" id="productName">読み込み中</p>
+  <div class="bar-actions">
+    <button class="btn ghost" id="shareBtn" type="button">リンクをコピー</button>
+    <button class="btn ghost" id="saveBtn" type="button">デザインを保存</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="stage" id="stage" aria-label="3Dプレビュー">
+    <div class="stage-loading" id="loading">3Dモデルを読み込んでいます</div>
+    <div class="tip" id="tip" hidden></div>
+    <p class="stage-hint">ドラッグで回す ／ 部分をタップで選ぶ</p>
+    <div class="views" id="views" role="group" aria-label="向きを変える"></div>
+    <div class="history" role="group" aria-label="操作の取り消し">
+      <button type="button" id="undoBtn" aria-label="ひとつ戻す" title="ひとつ戻す">↶</button>
+      <button type="button" id="redoBtn" aria-label="やり直す" title="やり直す">↷</button>
+    </div>
+  </section>
+
+  <aside class="slip" aria-label="注文伝票">
+    <div class="slip-head">
+      <span class="slip-label">注文伝票</span>
+      <span class="slip-no mono" id="slipNo"></span>
+    </div>
+
+    <section class="slip-sec">
+      <h2 class="sec-title">配色見本から始める</h2>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="slip-sec">
+      <div class="sec-row">
+        <h2 class="sec-title">部位ごとに選ぶ</h2>
+        <span class="sec-links">
+          <button class="link" id="shuffleBtn" type="button">おまかせ配色</button>
+          <button class="link" id="resetBtn" type="button">最初に戻す</button>
+        </span>
+      </div>
+      <ol class="parts" id="parts"></ol>
+    </section>
+
+    <section class="slip-sec" id="textSec">
+      <h2 class="sec-title" id="textTitle">刺しゅう</h2>
+      <div class="text-row">
+        <input id="textInput" type="text" autocomplete="off" placeholder="例: KEI 2026">
+        <span class="count mono" id="textCount"></span>
+      </div>
+      <div class="text-opts">
+        <div class="seg" id="fontSeg" role="radiogroup" aria-label="書体"></div>
+        <div class="chips" id="textColors" role="radiogroup" aria-label="糸の色"></div>
+      </div>
+      <p class="note" id="textNote"></p>
+    </section>
+
+    <section class="slip-sec" id="savedSec" hidden>
+      <h2 class="sec-title">保存したデザイン</h2>
+      <div class="saved" id="saved"></div>
+    </section>
+
+    <footer class="slip-foot">
+      <details class="breakdown">
+        <summary><span>合計（税込）</span><strong class="mono total" id="total">¥0</strong></summary>
+        <ul class="lines mono" id="lines"></ul>
+      </details>
+      <button class="btn primary wide" id="orderBtn" type="button">サイズを選んで注文へ</button>
+    </footer>
+  </aside>
+</main>
+
+<dialog class="order" id="orderDlg" aria-labelledby="orderTitle">
+  <form method="dialog" class="order-inner" id="orderForm">
+    <header class="order-head">
+      <h2 id="orderTitle">発注書</h2>
+      <button class="close" value="cancel" formnovalidate aria-label="閉じる">×</button>
+    </header>
+    <div class="order-body">
+      <div class="shots" id="shots"></div>
+      <table class="spec" id="spec"></table>
+      <div class="fields">
+        <label><span id="sizeLabel">サイズ</span><select id="sizeSel" required></select></label>
+        <label>数量<input id="qtyInput" type="number" min="1" max="20" value="1" required></label>
+        <label>お名前<input id="nameInput" type="text" autocomplete="name" required placeholder="山田 花子"></label>
+        <label>メールアドレス<input id="mailInput" type="email" autocomplete="email" required placeholder="hanako@example.com"></label>
+      </div>
+      <p class="note order-note" id="orderNote" hidden></p>
+      <p class="note">デモのため、本当のお名前やメールアドレスは入力しないでください。注文はこの端末の中にだけ記録され、どこにも送信されません。記録は<a href="admin.html">受注一覧</a>で確認できます。</p>
+      <p class="err" id="orderErr" role="alert"></p>
+    </div>
+    <footer class="order-foot">
+      <span class="mono order-total" id="orderTotal"></span>
+      <button class="btn ghost" type="button" id="printBtn">発注書を印刷</button>
+      <button class="btn primary" type="button" id="submitBtn">この内容で注文する</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="done" id="doneDlg">
+  <p class="done-label">注文を受け付けました</p>
+  <p class="done-no mono" id="doneNo"></p>
+  <p class="note">受付番号は受注一覧に表示されます。</p>
+  <div class="done-actions">
+    <a class="btn ghost" href="admin.html">受注一覧を見る</a>
+    <button class="btn primary" type="button" id="doneClose">デザインを続ける</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<p class="credit" id="credit"></p>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

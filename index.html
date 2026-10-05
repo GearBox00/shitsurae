@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>しつらえ｜カスタムオーダーの3Dシミュレーター</title>
+<meta name="description" content="色や素材を選ぶと、その場で3Dに反映。価格の計算から発注書まで出せる、カスタムオーダー用のシミュレーターです。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/top.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+<header class="tbar">
+  <a class="brand" href="index.html"><span class="brand-mark">し</span>しつらえ</a>
+  <nav class="tnav" aria-label="ページ内">
+    <a href="#gallery">シミュレーター一覧</a>
+    <a href="#features">できること</a>
+    <a href="#flow">導入の流れ</a>
+    <a href="admin.html">受注一覧（デモ）</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">カスタムオーダーの3Dシミュレーター</p>
+      <h1>選んだ色が、<br>その場で<span class="nowrap">形になる。</span></h1>
+      <p class="lead">お客様が部位ごとに色や素材を選ぶと、3Dの商品にすぐ反映されます。価格の計算、発注書の作成、受注の管理まで、ひとつの画面でつながります。</p>
+      <div class="hero-cta">
+        <a class="btn primary" href="simulator.html?p=shoe">靴のシミュレーターを試す</a>
+        <a class="btn ghost" href="#flow">導入の流れを見る</a>
+      </div>
+    </div>
+    <figure class="hero-stage" id="heroStage">
+      <div class="hero-loading" id="heroLoading">3Dモデルを読み込んでいます</div>
+      <figcaption class="hero-swatches" role="group" aria-label="本体の色を試す">
+        <span>本体の色を試す</span>
+        <button type="button" data-hex="#1f2e57" aria-label="紺" style="--c:#1f2e57" aria-pressed="true"></button>
+        <button type="button" data-hex="#d8462e" aria-label="朱" style="--c:#d8462e"></button>
+        <button type="button" data-hex="#4f6b3a" aria-label="苔" style="--c:#4f6b3a"></button>
+        <button type="button" data-hex="#e9b3ba" aria-label="桜" style="--c:#e9b3ba"></button>
+        <button type="button" data-hex="#f2f2ee" aria-label="雪" style="--c:#f2f2ee"></button>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="gallery" id="gallery">
+    <div class="sec-head">
+      <h2>シミュレーター一覧</h2>
+      <div class="filters">
+        <div class="cats" role="group" aria-label="分類で絞り込む" id="cats"></div>
+        <input type="search" id="q" placeholder="商品名で探す" aria-label="商品名で探す">
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="empty" id="empty" hidden>条件に合うシミュレーターがありません。分類を「すべて」に戻すか、別の言葉で探してください。</p>
+  </section>
+
+  <section class="features" id="features">
+    <h2>お客様の画面でできること</h2>
+    <ul class="feat-list">
+      <li><h3>回して、タップして選ぶ</h3><p>指やマウスで360°回せます。変えたい部分を直接タップすると、その部位の色選びが開きます。</p></li>
+      <li><h3>素材で質感と価格が変わる</h3><p>メッシュ、レザー、スエードのように素材を変えると、光り方と金額が同時に切り替わります。</p></li>
+      <li><h3>名前やロゴを入れる</h3><p>入れた文字は、曲面に沿って3Dの商品に貼られます。書体と糸の色も選べます。</p></li>
+      <li><h3>リンクで相談する</h3><p>作ったデザインは、そのままリンクにして家族やお店に送れます。開くと同じ配色で表示されます。</p></li>
+      <li><h3>発注書が自動でできる</h3><p>3方向の画像と仕様の一覧が入った発注書を、その場で印刷やPDFにできます。</p></li>
+      <li><h3>お店側で受注を管理</h3><p>届いた注文は一覧で確認でき、受付・制作中・発送済みの状態を切り替えられます。</p></li>
+    </ul>
+  </section>
+
+  <section class="flow" id="flow">
+    <h2>導入の流れ</h2>
+    <ol class="flow-list">
+      <li><h3>商品をお預かりする</h3><p>写真、図面、既存の3Dデータのいずれかをいただきます。</p></li>
+      <li><h3>3Dにして部位を分ける</h3><p>色を変えたい単位で部位を分けます。靴なら本体・ライン・ソールなど。</p></li>
+      <li><h3>色・素材・価格を決める</h3><p>選べる色、追加料金、刺しゅうの文字数などを設定ファイルに書きます。</p></li>
+      <li><h3>お店のサイトに置く</h3><p>今のホームページやネットショップに、リンクか埋め込みで追加します。</p></li>
+    </ol>
+  </section>
+</main>
+
+<footer class="tfoot">
+  <p>しつらえ（デモ）　制作: 合同会社GearBox</p>
+  <p class="note">靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用。準備中の項目は今後の試作予定です。</p>
+</footer>
+
+<script type="module">
+import { Viewer } from './js/viewer.js';
+
+const ITEMS = [
+  { id: 'shoe', name: 'ランニングスニーカー', cat: '靴', status: 'open', parts: 8, desc: '8つの部位、3種類の素材、かかとの刺しゅうまで選べます。', tone: '#1f2e57' },
+  { id: 'kintsugi', name: '金継ぎの器', cat: '工芸', status: 'open', parts: 5, desc: '継ぎ目と欠けを金・銀・朱から選び、仕上げの艶と高台の銘まで確かめられます。', tone: '#8a6a24' },
+  { id: 'umbrella', name: '長傘', cat: '雑貨', status: 'soon', parts: 4, desc: '生地の色と柄、持ち手の素材を選び、開いた姿で確かめられます。', tone: '#4f6b3a' },
+  { id: 'tote', name: 'トートバッグ', cat: '雑貨', status: 'soon', parts: 5, desc: '本体・持ち手・底布の色と、名入れの位置を選べます。', tone: '#b98a5a' },
+  { id: 'chair', name: 'ダイニングチェア', cat: '家具', status: 'soon', parts: 3, desc: '木の色と座面の張り地を組み合わせて選べます。', tone: '#5b3a5e' },
+];
+const CATS = ['すべて', ...new Set(ITEMS.map(i => i.cat))];
+let cat = 'すべて';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function renderCats() {
+  $('cats').innerHTML = CATS.map(c => `<button type="button" aria-pressed="${c === cat}">${esc(c)}</button>`).join('');
+  $('cats').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { cat = b.textContent; renderCats(); renderCards(); }));
+}
+function renderCards() {
+  const q = $('q').value.trim();
+  const list = ITEMS.filter(i => (cat === 'すべて' || i.cat === cat) && (!q || i.name.includes(q) || i.cat.includes(q)));
+  $('empty').hidden = list.length > 0;
+  $('cards').innerHTML = list.map(i => {
+    const open = i.status === 'open';
+    const tag = open ? '<span class="tag open">公開中</span>' : '<span class="tag">準備中</span>';
+    const inner = `
+      <div class="card-swatch" style="--tone:${i.tone}"><span class="mono">${String(i.parts).padStart(2, '0')}<small>部位</small></span></div>
+      <div class="card-body">
+        <p class="card-cat">${esc(i.cat)} ${tag}</p>
+        <h3>${esc(i.name)}</h3>
+        <p>${esc(i.desc)}</p>
+      </div>`;
+    return open
+      ? `<a class="card" href="simulator.html?p=${i.id}">${inner}<span class="card-go">開く →</span></a>`
+      : `<div class="card soon" aria-disabled="true">${inner}</div>`;
+  }).join('');
+}
+$('q').addEventListener('input', renderCards);
+renderCats(); renderCards();
+
+// ヒーローの3D（色を少しだけ試せる）
+(async () => {
+  try {
+    const P = await (await fetch('products/shoe.json')).json();
+    const v = new Viewer($('heroStage'), P);
+    await v.init();
+    v.controls.enableZoom = false;
+    v.camera.position.set(2.4, 0.9, 2.6);
+    const pal = id => P.palettes[P.parts.find(p => p.id === id).palette];
+    P.parts.forEach(pt => {
+      const c = pal(pt.id).find(c => c.id === pt.default);
+      v.setPart(pt.index, c.hex, pt.materials ? P.materials.mesh : null);
+    });
+    v.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+    v.controls.autoRotate = v.autoRotateAllowed;
+    $('heroLoading').hidden = true;
+    document.querySelectorAll('.hero-swatches button').forEach(b => b.addEventListener('click', () => {
+      v.setPart(0, b.dataset.hex);
+      document.querySelectorAll('.hero-swatches button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    }));
+  } catch (e) {
+    console.error(e);
+    $('heroLoading').textContent = '3Dを表示できませんでした。シミュレーターのページで改めてお試しください。';
+  }
+  document.body.dataset.ready = '1';
+})();
+</script>
+</body>
+</html>

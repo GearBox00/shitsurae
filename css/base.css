@@ -1,0 +1,70 @@
+/* しつらえ 共通の見た目 */
+:root {
+  --mat: #2f5d50;          /* 裁断マットの緑 */
+  --mat-deep: #244a40;
+  --mat-line: rgba(232, 242, 236, 0.09);
+  --mat-line-strong: rgba(232, 242, 236, 0.18);
+  --paper: #eef0ec;        /* 伝票の紙（青みのある白） */
+  --paper-2: #e2e6e1;
+  --ink: #1c2321;
+  --muted: #5b6662;
+  --rule: #c5ccc6;
+  --chalk: #e8b931;        /* チャコ（仕立て用のしるし）の黄 */
+  --chalk-ink: #3a2c00;
+  --danger: #b3261e;
+  --radius: 10px;
+  --font-body: 'Zen Kaku Gothic New', system-ui, sans-serif;
+  --font-display: 'Dela Gothic One', 'Zen Kaku Gothic New', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+
+:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; border-radius: 6px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4em;
+  min-height: 42px; padding: 0 18px; border-radius: 999px;
+  border: 1.5px solid var(--ink); background: transparent; cursor: pointer;
+  font-weight: 700; font-size: 14px; text-decoration: none; white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.btn.ghost:hover { background: var(--ink); color: var(--paper); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: var(--mat); border-color: var(--mat); }
+.btn.wide { width: 100%; min-height: 50px; font-size: 16px; }
+.link { background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); font-size: 13px; }
+.link:hover { color: var(--ink); }
+
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .04em; }
+.brand-mark {
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--chalk); color: var(--chalk-ink); font-size: 17px;
+}
+
+.note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.err { color: var(--danger); font-size: 13px; font-weight: 700; margin: 8px 0 0; min-height: 1em; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px;
+  font-size: 14px; opacity: 0; pointer-events: none; transition: .25s; z-index: 50;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

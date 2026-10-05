@@ -1,0 +1,8 @@
+.claude/
+tools/
+tools/_*.png
+tools/_parts_vis.png
+tools/clusters.png
+tools/labels.npy
+tools/tex_*.jpg
+開発メモ.md

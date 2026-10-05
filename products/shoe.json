@@ -1,0 +1,377 @@
+{
+  "id": "shoe",
+  "name": "ランニングスニーカー",
+  "category": "靴",
+  "basePrice": 12800,
+  "model": "assets/models/shoe_original.glb",
+  "partsMap": "assets/textures/shoe_parts.png",
+  "partsMapScale": 30,
+  "detailMap": "assets/textures/shoe_detail.png",
+  "credit": "靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用",
+  "palettes": {
+    "fabric": [
+      {
+        "id": "ink",
+        "name": "墨",
+        "hex": "#26282b"
+      },
+      {
+        "id": "snow",
+        "name": "雪",
+        "hex": "#f2f2ee"
+      },
+      {
+        "id": "ash",
+        "name": "灰",
+        "hex": "#9a9c9b"
+      },
+      {
+        "id": "navy",
+        "name": "紺",
+        "hex": "#1f2e57"
+      },
+      {
+        "id": "sky",
+        "name": "空",
+        "hex": "#7fa7d6"
+      },
+      {
+        "id": "moss",
+        "name": "苔",
+        "hex": "#4f6b3a"
+      },
+      {
+        "id": "matcha",
+        "name": "抹茶",
+        "hex": "#a3b46a"
+      },
+      {
+        "id": "vermilion",
+        "name": "朱",
+        "hex": "#d8462e"
+      },
+      {
+        "id": "sakura",
+        "name": "桜",
+        "hex": "#e9b3ba"
+      },
+      {
+        "id": "mustard",
+        "name": "芥子",
+        "hex": "#d9a72b"
+      },
+      {
+        "id": "plum",
+        "name": "葡萄",
+        "hex": "#5b3a5e"
+      },
+      {
+        "id": "camel",
+        "name": "駱駝",
+        "hex": "#b98a5a"
+      }
+    ],
+    "sole": [
+      {
+        "id": "snow",
+        "name": "雪",
+        "hex": "#f2f2ee"
+      },
+      {
+        "id": "ivory",
+        "name": "生成り",
+        "hex": "#e6dcc3"
+      },
+      {
+        "id": "gum",
+        "name": "ガム",
+        "hex": "#b5793f"
+      },
+      {
+        "id": "ink",
+        "name": "墨",
+        "hex": "#26282b"
+      },
+      {
+        "id": "ash",
+        "name": "灰",
+        "hex": "#9a9c9b"
+      },
+      {
+        "id": "vermilion",
+        "name": "朱",
+        "hex": "#d8462e"
+      },
+      {
+        "id": "sky",
+        "name": "空",
+        "hex": "#7fa7d6"
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "upper",
+      "name": "本体",
+      "index": 0,
+      "palette": "fabric",
+      "default": "navy",
+      "materials": [
+        "mesh",
+        "leather",
+        "suede"
+      ]
+    },
+    {
+      "id": "stripe",
+      "name": "サイドライン",
+      "index": 1,
+      "palette": "fabric",
+      "default": "snow"
+    },
+    {
+      "id": "heel",
+      "name": "かかと",
+      "index": 2,
+      "palette": "fabric",
+      "default": "ink"
+    },
+    {
+      "id": "laces",
+      "name": "靴ひも",
+      "index": 3,
+      "palette": "fabric",
+      "default": "snow"
+    },
+    {
+      "id": "lining",
+      "name": "中敷き・裏地",
+      "index": 4,
+      "palette": "fabric",
+      "default": "ash"
+    },
+    {
+      "id": "tab",
+      "name": "つまみ",
+      "index": 5,
+      "palette": "fabric",
+      "default": "vermilion"
+    },
+    {
+      "id": "midsole",
+      "name": "ミッドソール",
+      "index": 6,
+      "palette": "sole",
+      "default": "snow"
+    },
+    {
+      "id": "outsole",
+      "name": "アウトソール",
+      "index": 7,
+      "palette": "sole",
+      "default": "gum"
+    }
+  ],
+  "materials": {
+    "mesh": {
+      "name": "ニットメッシュ",
+      "price": 0,
+      "roughness": 0.85,
+      "detail": 1.0,
+      "sheen": 0.0
+    },
+    "leather": {
+      "name": "スムースレザー",
+      "price": 3000,
+      "roughness": 0.38,
+      "detail": 0.35,
+      "sheen": 0.0
+    },
+    "suede": {
+      "name": "スエード",
+      "price": 2500,
+      "roughness": 1.0,
+      "detail": 0.55,
+      "sheen": 0.6
+    }
+  },
+  "customColor": {
+    "price": 1000,
+    "label": "好きな色（1色ごと）"
+  },
+  "text": {
+    "part": "heel",
+    "facing": "back",
+    "label": "かかとの刺しゅう",
+    "maxLength": 8,
+    "price": 800,
+    "fonts": [
+      {
+        "id": "gothic",
+        "name": "ゴシック",
+        "css": "700 120px 'Zen Kaku Gothic New', sans-serif"
+      },
+      {
+        "id": "script",
+        "name": "筆記体",
+        "css": "400 130px 'Caveat', cursive"
+      }
+    ],
+    "colors": [
+      {
+        "hex": "#f2f2ee",
+        "name": "白"
+      },
+      {
+        "hex": "#26282b",
+        "name": "黒"
+      },
+      {
+        "hex": "#d9a72b",
+        "name": "金茶"
+      },
+      {
+        "hex": "#d8462e",
+        "name": "朱"
+      }
+    ],
+    "colorLabel": "糸の色",
+    "placeholder": "例: KEI 2026"
+  },
+  "sizes": [
+    "22.5",
+    "23.0",
+    "23.5",
+    "24.0",
+    "24.5",
+    "25.0",
+    "25.5",
+    "26.0",
+    "26.5",
+    "27.0",
+    "27.5",
+    "28.0",
+    "29.0"
+  ],
+  "presets": [
+    {
+      "name": "紺と朱",
+      "colors": {
+        "upper": "navy",
+        "stripe": "snow",
+        "heel": "ink",
+        "laces": "snow",
+        "lining": "ash",
+        "tab": "vermilion",
+        "midsole": "snow",
+        "outsole": "gum"
+      },
+      "material": "mesh"
+    },
+    {
+      "name": "墨一色",
+      "colors": {
+        "upper": "ink",
+        "stripe": "ink",
+        "heel": "ink",
+        "laces": "ink",
+        "lining": "ink",
+        "tab": "ink",
+        "midsole": "ink",
+        "outsole": "ink"
+      },
+      "material": "leather"
+    },
+    {
+      "name": "桜と生成り",
+      "colors": {
+        "upper": "sakura",
+        "stripe": "snow",
+        "heel": "camel",
+        "laces": "snow",
+        "lining": "snow",
+        "tab": "camel",
+        "midsole": "ivory",
+        "outsole": "gum"
+      },
+      "material": "suede"
+    },
+    {
+      "name": "苔と芥子",
+      "colors": {
+        "upper": "moss",
+        "stripe": "mustard",
+        "heel": "camel",
+        "laces": "snow",
+        "lining": "ash",
+        "tab": "mustard",
+        "midsole": "ivory",
+        "outsole": "ink"
+      },
+      "material": "mesh"
+    }
+  ],
+  "views": {
+    "side": [
+      0.0,
+      0.3,
+      3.6
+    ],
+    "front": [
+      3.3,
+      0.5,
+      0.0
+    ],
+    "back": [
+      -3.3,
+      0.5,
+      0.0
+    ],
+    "top": [
+      0.0,
+      3.6,
+      0.01
+    ],
+    "sole": [
+      0.0,
+      -3.6,
+      0.01
+    ]
+  },
+  "defaultMaterial": "mesh",
+  "sizeLabel": "サイズ",
+  "sizeUnit": "cm",
+  "viewButtons": [
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "front",
+      "label": "つま先"
+    },
+    {
+      "id": "back",
+      "label": "かかと"
+    },
+    {
+      "id": "top",
+      "label": "上"
+    },
+    {
+      "id": "sole",
+      "label": "底"
+    }
+  ],
+  "snapshotViews": [
+    "side",
+    "front",
+    "back"
+  ],
+  "presetDots": [
+    "upper",
+    "stripe",
+    "tab",
+    "outsole"
+  ]
+}
