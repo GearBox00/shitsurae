@@ -430,7 +430,8 @@
         "includedCracks": 3,
         "includedChips": 1,
         "perCrack": 3000,
-        "perChip": 2000
+        "perChip": 2000,
+        "perLargeChip": 3000
       }
     },
     {
@@ -1329,7 +1330,8 @@
         "includedCracks": 2,
         "includedChips": 1,
         "perCrack": 3000,
-        "perChip": 2000
+        "perChip": 2000,
+        "perLargeChip": 3000
       }
     },
     {
@@ -2117,7 +2119,8 @@
         "includedCracks": 1,
         "includedChips": 1,
         "perCrack": 3000,
-        "perChip": 2000
+        "perChip": 2000,
+        "perLargeChip": 3000
       }
     },
     {
@@ -3225,7 +3228,8 @@
         "includedCracks": 1,
         "includedChips": 1,
         "perCrack": 3000,
-        "perChip": 2000
+        "perChip": 2000,
+        "perLargeChip": 3000
       }
     }
   ],
@@ -3298,6 +3302,7 @@
     "includedCracks": 3,
     "includedChips": 1,
     "perCrack": 3000,
-    "perChip": 2000
+    "perChip": 2000,
+    "perLargeChip": 3000
   }
-}
+}

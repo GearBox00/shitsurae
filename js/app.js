@@ -1,7 +1,7 @@
 // シミュレーター画面の操作。状態は1つのオブジェクトにまとめ、URLにも書き出す。
 import { Viewer } from './viewer.js';
 import { store, yen, newOrderNo, safeImg } from './store.js';
-import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf } from './vessel.js';
+import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf, CHIP_SCALE, chipOf } from './vessel.js';
 import { openPhotoShape } from './photo-shape.js';
 
 const $ = id => document.getElementById(id);
@@ -46,7 +46,7 @@ const defectsOn = () => P.vesselMode === 'kintsugi';
 const r3 = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
 const roundDefects = d => ({
   cracks: d.cracks.map(pts => pts.map(([t, y, r, a = 0]) => [r3(t, 3), r3(y, 2), r3(r, 2), a])),
-  chips: d.chips.map(t => r3(t, 3)),
+  chips: d.chips.map(c => (Array.isArray(c) ? [r3(c[0], 3), c[1]] : r3(c, 3))),
 });
 const currentDefects = () => state.defects || (shapeOf() ? roundDefects(sampleDefects(shapeOf())) : null);
 function sanitizeDefects(d) {
@@ -62,14 +62,21 @@ function sanitizeDefects(d) {
     }
     cracks.push(pts.map(p => [p[0], p[1], p[2], p[3] ?? 0]));
   }
-  if (!d.chips.every(t => num(t, -10, 20))) return null;
-  return { cracks, chips: d.chips.slice() };
+  // 欠けは角度だけ（中）か、[角度, 大きさ 0〜2]
+  const chipOk = c => num(c, -10, 20) || (Array.isArray(c) && c.length === 2 && num(c[0], -10, 20) && [0, 1, 2].includes(c[1]));
+  if (!d.chips.every(chipOk)) return null;
+  return { cracks, chips: d.chips.map(c => (Array.isArray(c) ? [c[0], c[1]] : c)) };
 }
+const CHIP_NAMES = ['小', '中', '大'];
+const largeChips = d => d.chips.filter(c => chipOf(c)[1] === 2).length;
 function defectSummary(d) {
   const len = d.cracks.reduce((a, pts) => a + crackLength(pts), 0);
+  // 欠けの大きさの内訳（中だけなら書かない）
+  const n = [0, 0, 0]; d.chips.forEach(c => { n[chipOf(c)[1]]++; });
+  const sizes = n[0] || n[2] ? `（${[2, 1, 0].filter(i => n[i]).map(i => CHIP_NAMES[i] + n[i]).join('・')}）` : '';
   return state.defects
-    ? `なぞった割れ ${d.cracks.length}本（合計 ${len.toFixed(1)}cm）・欠け ${d.chips.length}か所`
-    : `見本の割れ（${d.cracks.length}本）・欠け ${d.chips.length}か所`;
+    ? `なぞった割れ ${d.cracks.length}本（合計 ${len.toFixed(1)}cm）・欠け ${d.chips.length}か所${sizes}`
+    : `見本の割れ（${d.cracks.length}本）・欠け ${d.chips.length}か所${sizes}`;
 }
 function textCfg() {
   const E = eff();
@@ -128,6 +135,8 @@ function price() {
     const extraH = Math.max(0, state.defects.chips.length - dp.includedChips);
     if (extraC) lines.push({ label: `割れの追加 ×${extraC}`, amount: extraC * dp.perCrack });
     if (extraH) lines.push({ label: `欠けの追加 ×${extraH}`, amount: extraH * dp.perChip });
+    const big = largeChips(state.defects);
+    if (big && dp.perLargeChip) lines.push({ label: `大きな欠け ×${big}`, amount: big * dp.perLargeChip });
   }
   return { lines, total: lines.reduce((a, l) => a + l.amount, 0) };
 }
@@ -272,7 +281,7 @@ function renderDefects() {
   }
   $('defectStatus').textContent = defectSummary(currentDefects());
   const dp = eff().defectPricing;
-  $('defectNote').textContent = dp ? `割れ${dp.includedCracks}本・欠け${dp.includedChips}か所までは基本料金に含みます。増えた分は 割れ1本 +${yen(dp.perCrack)}・欠け1か所 +${yen(dp.perChip)}。` : '';
+  $('defectNote').textContent = dp ? `割れ${dp.includedCracks}本・欠け${dp.includedChips}か所までは基本料金に含みます。増えた分は 割れ1本 +${yen(dp.perCrack)}・欠け1か所 +${yen(dp.perChip)}。${dp.perLargeChip ? `大きな欠けは1か所につき +${yen(dp.perLargeChip)}。` : ''}` : '';
 }
 
 function render() {
@@ -438,11 +447,13 @@ function renderSaved() {
 const EDIT_HINT = {
   rotate: 'ドラッグで器を回して、なぞりたい面を手前に向けます',
   trace: '器の上を指やマウスでなぞると、その線が割れになります',
-  chip: '口縁をタップすると、そこに欠けを置きます',
+  chip: '口縁をタップすると、選んだ大きさの欠けを置きます',
   erase: '消したい割れや欠けをタップします',
 };
+let chipSize = 1;
 function setEdit(mode) {
   viewer.setEditMode(mode);
+  $('chipSizes').hidden = mode !== 'chip';
   document.querySelectorAll('#editBar [data-edit]').forEach(b => b.setAttribute('aria-pressed', b.dataset.edit === mode));
   $('editHint').textContent = EDIT_HINT[mode];
 }
@@ -575,6 +586,7 @@ async function main() {
   // 写真から器の形を作る（写真はこの端末の中だけで使う）
   if (shapeEnabled()) {
     $('shapeSec').hidden = false;
+    $('tipBroken').hidden = !defectsOn();
     $('photoInput').addEventListener('change', e => {
       const file = e.target.files[0];
       e.target.value = '';   // 同じ写真を選び直しても反応するように
@@ -598,6 +610,11 @@ async function main() {
     $('editBar').addEventListener('click', e => {
       const b = e.target.closest('[data-edit]');
       if (b) setEdit(b.dataset.edit);
+      const z = e.target.closest('[data-size]');
+      if (z) {
+        chipSize = +z.dataset.size;
+        document.querySelectorAll('#chipSizes [data-size]').forEach(x => x.setAttribute('aria-pressed', x === z));
+      }
     });
     $('editDone').addEventListener('click', exitEdit);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && viewer.editMode) exitEdit(); });
@@ -609,16 +626,18 @@ async function main() {
       if (mode === 'chip') {
         if (hit.y < sh.h - 0.9) { toast('欠けは口縁の近くをタップしてください'); return; }
         if (currentDefects().chips.length >= 8) { toast('欠けは8か所までです'); return; }
-        commit(s => { const d = editDefs(s); d.chips.push(r3(hit.theta, 3)); s.defects = d; });
+        // 中は角度だけで持つ（古いリンクと同じ形）。小と大は [角度, 大きさ]
+        commit(s => { const d = editDefs(s); d.chips.push(chipSize === 1 ? r3(hit.theta, 3) : [r3(hit.theta, 3), chipSize]); s.defects = d; });
         return;
       }
       if (mode === 'erase') {
         const d = currentDefects();
         let best = { kind: null, i: -1, d: 0.5 };
         d.cracks.forEach((pts, i) => { const dd = distToCrack(pts, hit.theta, hit.y, hit.r); if (dd < best.d) best = { kind: 'crack', i, d: dd }; });
-        d.chips.forEach((t, i) => {
+        d.chips.forEach((c, i) => {
+          const [t, size] = chipOf(c), k = CHIP_SCALE[size];
           const dd = Math.abs((((hit.theta - t + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) * hit.r;
-          if (hit.y > sh.h - 1.2 && dd < 0.9 && dd < best.d + 0.4) best = { kind: 'chip', i, d: dd };
+          if (hit.y > sh.h - 1.2 * k[1] && dd < 0.9 * k[0] && dd < best.d + 0.4) best = { kind: 'chip', i, d: dd };
         });
         if (!best.kind) { toast('近くに割れや欠けがありません'); return; }
         commit(s => { const e = editDefs(s); (best.kind === 'crack' ? e.cracks : e.chips).splice(best.i, 1); s.defects = e; });

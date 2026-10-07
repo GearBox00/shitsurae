@@ -39,14 +39,15 @@ function autoMarks(image) {
     }
     return thr;
   };
-  // 中央付近と縁の明るさを比べて、器が暗いのか明るいのかを決める
+  // 中央付近と縁の明るさを比べた結果は「器が暗い」「器が明るい」のどちらを先に疑うかにだけ使う。
+  // 白い器を黒い台に載せた写真では、中央に台が写って逆に判断されるため、両方を試して器らしいほうを選ぶ
   let centerSum = 0, cn = 0, edgeSum = 0, en = 0;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const v = lum[y * W + x];
     if (Math.abs(x - W / 2) < W * 0.15 && Math.abs(y - H / 2) < H * 0.15) { centerSum += v; cn++; }
     if (x < 6 || y < 6 || x >= W - 6) { edgeSum += v; en++; }
   }
-  const dark = centerSum / cn < edgeSum / en;
+  const guessDark = centerSum / cn < edgeSum / en;
 
   // 塊に分けて、中央に近くて大きい塊を選ぶ。
   // 布の織り目などの細いつながりで背景とくっつかないよう、一度削ってから選び、あとで元の太さに戻す
@@ -64,9 +65,12 @@ function autoMarks(image) {
     }
     return out;
   };
-  function pick(thr) {
+  const pick = (thr, dark) => {
     const on = new Uint8Array(W * H);
     for (let i = 0; i < W * H; i++) on[i] = dark ? lum[i] < thr : lum[i] > thr;
+    return pickOn(on);
+  };
+  function pickOn(on) {
     let core = on;
     for (let k = 0; k < 3; k++) core = morph(core, false);
     const lab = new Int32Array(W * H).fill(-1);
@@ -100,23 +104,74 @@ function autoMarks(image) {
   }
   // 選んだ塊が写真の左右の端まで届いていたら、背景（机や布）も混ざっている。
   // 器の側だけの明るさで、もう一度分け直す
-  let lo = 0, hi = 255, thr = otsu(lo, hi), res = pick(thr);
-  for (let i = 0; i < 3 && res.touch; i++) {
-    if (dark) hi = thr; else lo = thr;
-    thr = otsu(lo, hi);
-    res = pick(thr);
+  function byLevel(dark) {
+    let lo = 0, hi = 255, thr = otsu(lo, hi), res = pick(thr, dark);
+    for (let i = 0; i < 4 && res.touch; i++) {
+      if (dark) hi = thr; else lo = thr;
+      if (hi - lo < 8) break;
+      thr = otsu(lo, hi);
+      res = pick(thr, dark);
+    }
+    return judge(res, dark === guessDark ? 1.1 : 1);
   }
-  const left = new Array(H).fill(-1), right = new Array(H).fill(-1);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (!res.mask[y * W + x]) continue;
-    if (left[y] < 0) left[y] = x;
-    right[y] = x;
+  // 色の境目で分ける：写真の端から、隣どうしの色の差が小さい所をたどって背景とみなす。
+  // 白い器と明るい壁のように明るさが近くても、境目で色が急に変わるので分けられる
+  function byEdge() {
+    const r = new Float32Array(W * H), gg = new Float32Array(W * H), bb = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let sr = 0, sg = 0, sb = 0, n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const j = (ny * W + nx) * 4; sr += d[j]; sg += d[j + 1]; sb += d[j + 2]; n++;
+      }
+      const i = y * W + x; r[i] = sr / n; gg[i] = sg / n; bb[i] = sb / n;
+    }
+    const bg = new Uint8Array(W * H), queue = new Int32Array(W * H);
+    let qh = 0, qt = 0;
+    const seed = i => { if (!bg[i]) { bg[i] = 1; queue[qt++] = i; } };
+    for (let x = 0; x < W; x++) { seed(x); seed((H - 1) * W + x); }
+    for (let y = 0; y < H; y++) { seed(y * W); seed(y * W + W - 1); }
+    while (qh < qt) {
+      const i = queue[qh++], x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const j = ny * W + nx;
+        if (bg[j]) continue;
+        if (Math.abs(r[j] - r[i]) + Math.abs(gg[j] - gg[i]) + Math.abs(bb[j] - bb[i]) < 6) { bg[j] = 1; queue[qt++] = j; }
+      }
+    }
+    const on = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) on[i] = bg[i] ? 0 : 1;
+    return judge(pickOn(on), 1);
   }
-  const rows = [...Array(H).keys()].filter(y => left[y] >= 0);
-  if (rows.length < 10) return null;
-  const top = rows[0], bottom = rows[rows.length - 1];
-  const width = y => right[y] - left[y];
-  const widest = rows.reduce((a, y) => (width(y) > width(a) + 1 ? y : a), rows[0]);
+  function judge(res, bias) {
+    const left = new Array(H).fill(-1), right = new Array(H).fill(-1);
+    let n = 0, sides = false, topEdge = false;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!res.mask[y * W + x]) continue;
+      n++;
+      if (x <= 2 || x >= W - 3) sides = true;
+      if (y <= 2) topEdge = true;
+      if (left[y] < 0) left[y] = x;
+      right[y] = x;
+    }
+    const rows = [...Array(H).keys()].filter(y => left[y] >= 0);
+    if (rows.length < 10) return null;
+    const top = rows[0], bottom = rows[rows.length - 1];
+    const width = y => right[y] - left[y];
+    const widest = rows.reduce((a, y) => (width(y) > width(a) + 1 ? y : a), rows[0]);
+    // 器らしさ：写真の端に触れていない、口（いちばん広い所）が上のほう、大きさが極端でない、中央に近い
+    const area = n / (W * H), upper = (widest - top) / Math.max(1, bottom - top);
+    const distC = Math.hypot((left[widest] + right[widest]) / 2 - W / 2, (top + bottom) / 2 - H / 2) / W;
+    let score = (sides ? 0.15 : 1) * (topEdge ? 0.4 : 1) * (upper < 0.55 ? 1 : 0.35)
+      * (area > 0.008 && area < 0.6 ? 1 : 0.3) * Math.sqrt(Math.min(1, area / 0.04)) * (1 - Math.min(0.8, distC)) * bias;
+    return { left, right, top, bottom, widest, score };
+  }
+  const cands = [byLevel(guessDark), byLevel(!guessDark), byEdge()].filter(Boolean);
+  if (!cands.length) return null;
+  const { left, right, rows, top, bottom, widest } = cands.reduce((a, b) => (b.score > a.score ? b : a));
   const cx = (left[widest] + right[widest]) / 2;
   // 高台：側面は写真の上でほぼ垂直なので、右端の位置がほとんど変わらない行が続く所を高台の側面とみなす。
   // その上端が「高台の上の角」、下端が「高台の下の角」

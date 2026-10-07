@@ -34,6 +34,12 @@
         <button type="button" data-edit="chip" aria-pressed="false">欠けを置く</button>
         <button type="button" data-edit="erase" aria-pressed="false">消す</button>
       </div>
+      <div class="chip-sizes" id="chipSizes" role="group" aria-label="欠けの大きさ" hidden>
+        <span>大きさ</span>
+        <button type="button" data-size="0" aria-pressed="false">小</button>
+        <button type="button" data-size="1" aria-pressed="true">中</button>
+        <button type="button" data-size="2" aria-pressed="false">大</button>
+      </div>
       <p class="edit-hint" id="editHint"></p>
       <button type="button" class="edit-done" id="editDone">完了</button>
     </div>
@@ -57,7 +63,15 @@
         <input type="file" id="photoInput" accept="image/*" hidden>
         <button class="link" id="shapeReset" type="button" hidden>見本の形に戻す</button>
       </div>
-      <p class="note">横から少し見下ろして撮った写真が向いています。写真はこの端末の中だけで使い、どこにも送信しません。</p>
+      <p class="tips-title">撮り方のこつ</p>
+      <ol class="shoot-tips">
+        <li>器の真横から、少しだけ見下ろして撮る</li>
+        <li>口の両端と高台まで、器全体を写真に収める</li>
+        <li>スマホを傾けず、まっすぐ構える</li>
+        <li>背景は器と違う色にする（白い器なら暗い布、黒い器なら明るい紙）</li>
+        <li id="tipBroken" hidden>一部が割れて無い器は、残っている口縁が左右いっぱいに写る向きで撮る</li>
+      </ol>
+      <p class="note">写真はこの端末の中だけで使い、どこにも送信しません。</p>
       <p class="err" id="shapeErr" role="alert"></p>
     </section>
 

@@ -325,6 +325,12 @@ function designedSample(shape) {
 // 点の貫く向きに応じて、器の厚みの分の差を数えない距離。
 // 平らな面（上下に貫く）は、平皿の裏の高台の内側まで届くよう 1cm まで許す
 const THRU_V = 1.0;
+
+// 欠けの大きさ：0=小・1=中（見本と同じ）・2=大。[幅の倍率, 深さの倍率]
+export const CHIP_SCALE = [[0.6, 0.6], [1, 1], [2.4, 2]];
+// 古いリンクの欠けは角度だけなので「中」として読む
+export const chipOf = c => (Array.isArray(c) ? [c[0], c[1]] : [c, 1]);
+
 // 点と線分の距離。X＝回転方向、Y＝高さ、Z＝半径方向（どれも線分の始点からの差）
 //   axis 0（壁）：高さも含めて測り、半径方向は器の厚みの分を数えない
 //   axis 1（平らな面）：真上から見た位置（X と Z）だけで測る。高さの差が THRU_V 以内なら上の面も裏の面も同じ扱い
@@ -474,20 +480,22 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
         }
       }
     }
-    // 欠け：口縁の近くの画素
-    for (const ct of defs.chips || []) {
+    // 欠け：口縁の近くの画素。欠けは角度だけ（中）か、[角度, 大きさ 0=小 1=中 2=大]
+    for (const c of defs.chips || []) {
+      const [ct, size] = chipOf(c);
+      const cw = CH_W * CHIP_SCALE[size][0], cd = Math.min(CH_D * CHIP_SCALE[size][1], H * 0.45);
       for (let row = 0; row < S; row++) {
         const Y = rowY[row];
-        if (rowKind[row] === 'foot' || Y < H - CH_D * 1.2) continue;
-        const rr = Math.max(rowR[row], 0.3), span = (CH_W * 1.2) / rr;
+        if (rowKind[row] === 'foot' || Y < H - cd * 1.2) continue;
+        const rr = Math.max(rowR[row], 0.3), span = (cw * 1.2) / rr;
         const c0 = Math.floor(((ct - span) / (2 * Math.PI)) * W), c1 = Math.ceil(((ct + span) / (2 * Math.PI)) * W);
         for (let col = c0; col <= c1; col++) {
           const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
           const cx = wrapPi(th - ct) * rr;
-          const edge = CH_D * (1 - (cx / CH_W) ** 2) * (1 + 0.18 * Math.sin(cx * 9));
+          const edge = cd * (1 - (cx / cw) ** 2) * (1 + 0.18 * Math.sin(cx * 9 / CHIP_SCALE[size][0]));
           // 欠けの縁までの距離から、その画素のうち何割が欠けかを決める（縁を滑らかにする）
           const px = Math.max((2 * Math.PI * rr) / W, pxV);
-          const inside = Math.min(CH_W - Math.abs(cx), Y - (H - edge));
+          const inside = Math.min(cw - Math.abs(cx), Y - (H - edge));
           const cov = Math.max(0, Math.min(1, 0.5 + inside / px));
           if (cov > 0) {
             const o = row * W + cc;

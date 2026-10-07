@@ -93,6 +93,8 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 
 .shape-status { margin: 0 0 8px; font-weight: 700; font-size: 14px; }
 .shape-actions { display: flex; align-items: center; gap: 14px; }
+.tips-title { margin: 12px 0 4px; font-size: 12px; font-weight: 700; }
+.shoot-tips { margin: 0; padding-left: 1.4em; font-size: 12px; color: var(--muted); line-height: 1.7; }
 .btn.small { min-height: 38px; padding: 0 14px; font-size: 13px; }
 
 /* 割れの編集 */
@@ -109,6 +111,14 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 }
 .edit-modes button[aria-pressed="true"] { background: var(--chalk); color: var(--chalk-ink); }
 .edit-done { grid-column: 2; grid-row: 1; border: 1.5px solid var(--chalk); background: transparent; color: var(--chalk); min-height: 38px; padding: 0 16px; border-radius: 999px; font-weight: 700; cursor: pointer; }
+.chip-sizes { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; }
+.chip-sizes[hidden] { display: none; }
+.chip-sizes span { margin-right: 4px; color: rgba(238,240,236,.85); }
+.chip-sizes button {
+  border: 1.5px solid rgba(238,240,236,.35); background: transparent; color: var(--paper);
+  min-width: 44px; min-height: 34px; border-radius: 999px; font-weight: 700; cursor: pointer;
+}
+.chip-sizes button[aria-pressed="true"] { background: var(--chalk); color: var(--chalk-ink); border-color: var(--chalk); }
 .edit-hint { grid-column: 1 / -1; margin: 0; font-size: 12px; color: rgba(238,240,236,.85); text-align: center; }
 body.editing .stage-hint, body.editing .views { opacity: .35; }
 
