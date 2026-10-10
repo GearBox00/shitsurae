@@ -63,11 +63,14 @@
     <h2>お客様の画面でできること</h2>
     <ul class="feat-list">
       <li><h3>回して、タップして選ぶ</h3><p>指やマウスで360°回せます。変えたい部分を直接タップすると、その部位の色選びが開きます。</p></li>
-      <li><h3>素材で質感と価格が変わる</h3><p>メッシュ、レザー、スエードのように素材を変えると、光り方と金額が同時に切り替わります。</p></li>
-      <li><h3>名前やロゴを入れる</h3><p>入れた文字は、曲面に沿って3Dの商品に貼られます。書体と糸の色も選べます。</p></li>
+      <li><h3>素材で質感と価格が変わる</h3><p>レザーやスエード、釉薬のつやとマット、地金の鏡面と槌目のように、仕上げを変えると光り方と金額が同時に切り替わります。</p></li>
+      <li><h3>形と仕様を選ぶ</h3><p>傘の骨の数や柄、指輪の幅と石の大きさ、椅子の脚や背もたれの高さなど、形そのものも選んだとおりに組み変わります。</p></li>
+      <li><h3>名前やロゴを入れる</h3><p>入れた文字は、曲面に沿って3Dの商品に貼られます。かかとの刺しゅう、指輪の内側の刻印、器の高台の銘まで再現します。</p></li>
+      <li><h3>写真から器の形を作る</h3><p>お手元の器を横と真上から撮ると、その形と欠けを3Dに取り込めます。写真は端末の中だけで使い、送信しません。</p></li>
+      <li><h3>割れをなぞって相談する</h3><p>金継ぎでは、割れの線を指でなぞり、欠けの位置と大きさを置けます。直したあとの姿と見積りが、その場で分かります。</p></li>
+      <li><h3>使い込んだ姿を見る</h3><p>漆のお椀は、つまみを動かすと10年・20年と使い込んで艶が増し、下の塗りがのぞいてくる姿まで確かめられます。</p></li>
       <li><h3>リンクで相談する</h3><p>作ったデザインは、そのままリンクにして家族やお店に送れます。開くと同じ配色で表示されます。</p></li>
-      <li><h3>発注書が自動でできる</h3><p>3方向の画像と仕様の一覧が入った発注書を、その場で印刷やPDFにできます。</p></li>
-      <li><h3>お店側で受注を管理</h3><p>届いた注文は一覧で確認でき、受付・制作中・発送済みの状態を切り替えられます。</p></li>
+      <li><h3>発注書と受注の管理</h3><p>3方向の画像と仕様が入った発注書を、その場で印刷やPDFにできます。届いた注文はお店側の一覧で、受付・制作中・発送済みを切り替えられます。</p></li>
     </ul>
   </section>
 
@@ -84,7 +87,7 @@
 
 <footer class="tfoot">
   <p>しつらえ（デモ）　制作: 合同会社GearBox</p>
-  <p class="note">靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用。準備中の項目は今後の試作予定です。</p>
+  <p class="note">靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用。器・傘・指輪・バッグ・マグカップ・椅子の3Dは GearBox がプログラムで作成。価格・仕上げ名・工期はデモ用の仮の値です。</p>
 </footer>
 
 <script type="module">
@@ -94,9 +97,9 @@ const ITEMS = [
   { id: 'shoe', name: 'ランニングスニーカー', cat: '靴', status: 'open', parts: 8, desc: '8つの部位、3種類の素材、かかとの刺しゅうまで選べます。', tone: '#1f2e57' },
   { id: 'kintsugi', name: '金継ぎの器', cat: '工芸', status: 'open', parts: 5, desc: '茶碗・平皿・湯呑み・徳利の4種類。継ぎ目と欠けを金・銀・朱から選び、仕上げの艶と高台の銘まで確かめられます。', tone: '#8a6a24' },
   { id: 'urushi', name: '漆のお椀', cat: '工芸', status: 'open', parts: 4, desc: '外・内・縁・高台を塗り分け、10年・20年と使い込んだ姿まで確かめられます。形は写真1枚から作りました。', tone: '#7a2a1c' },
-  { id: 'umbrella', name: '長傘', cat: '雑貨', status: 'open', parts: 5, desc: '8・12・16本骨から選び、生地を1枚おきに塗り分け。骨・手元の素材まで、開いた姿で確かめられます。', tone: '#4f6b3a' },
-  { id: 'ring', name: '指輪', cat: 'アクセサリー', status: 'open', parts: 4, desc: '一粒石・三つ石・ハーフエタニティ。地金と石、鏡面や槌目の仕上げを選び、内側の刻印まで確かめられます。', tone: '#9a7b3c' },
-  { id: 'tote', name: 'トートバッグ', cat: '雑貨', status: 'open', parts: 6, desc: '3つの大きさから選び、本体・底布・持ち手・ポケットを塗り分け。ポケットの名入れまで確かめられます。', tone: '#b98a5a' },
+  { id: 'umbrella', name: '長傘', cat: '雑貨', status: 'open', parts: 5, desc: '8・12・16本骨。ボーダーやドットなどの柄、骨と手元の素材と形を選び、開いた姿と閉じた姿で確かめられます。', tone: '#4f6b3a' },
+  { id: 'ring', name: '指輪', cat: 'アクセサリー', status: 'open', parts: 4, desc: '一粒石・三つ石・ハーフエタニティ。地金と透き通る石、幅と石の大きさ、鏡面や槌目の仕上げ、内側の刻印まで選べます。', tone: '#9a7b3c' },
+  { id: 'tote', name: 'トートバッグ', cat: '雑貨', status: 'open', parts: 6, desc: '3つの大きさ。本体・底布・持ち手・ポケットを塗り分け、ポケットの数や口の留め具、名入れまで選べます。', tone: '#b98a5a' },
   { id: 'mug', name: 'マグカップ', cat: '食器', status: 'open', parts: 5, desc: 'ストレート・まるみ・すり鉢の3つの形。外・内・持ち手・口縁の釉薬と、貫入やマットの仕上げ、名入れまで選べます。', tone: '#27406b' },
   { id: 'chair', name: 'ダイニングチェア', cat: '家具', status: 'open', parts: 3, desc: 'サイドとアームの2種類。木の色と塗装、座面・背もたれの張り地、脚の形と背もたれの高さまで選べます。', tone: '#5b3a5e' },
 ];
@@ -117,7 +120,10 @@ function renderCards() {
     const open = i.status === 'open';
     const tag = open ? '<span class="tag open">公開中</span>' : '<span class="tag">準備中</span>';
     const inner = `
-      <div class="card-swatch" style="--tone:${i.tone}"><span class="mono">${String(i.parts).padStart(2, '0')}<small>部位</small></span></div>
+      <div class="card-swatch" style="--tone:${i.tone}">
+        ${open ? `<img src="assets/thumbs/${esc(i.id)}.webp" alt="" loading="lazy" width="720" height="480">` : ''}
+        <span class="mono">${String(i.parts).padStart(2, '0')}<small>部位</small></span>
+      </div>
       <div class="card-body">
         <p class="card-cat">${esc(i.cat)} ${tag}</p>
         <h3>${esc(i.name)}</h3>
