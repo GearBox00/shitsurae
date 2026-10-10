@@ -1,0 +1,338 @@
+{
+  "id": "chair",
+  "name": "ダイニングチェア",
+  "category": "家具",
+  "build": "chair",
+  "basePrice": 38000,
+  "priceLabel": "ダイニングチェア（サイド）",
+  "partsMapScale": 30,
+  "shadow": [
+    1.8,
+    1.8
+  ],
+  "credit": "椅子の3Dモデル: GearBox がプログラムで作成",
+  "materialLabel": "木部の塗装",
+  "defaultMaterial": "oil",
+  "initialView": "naname",
+  "palettes": {
+    "wood": [
+      {
+        "id": "oak",
+        "name": "オーク",
+        "hex": "#c49a64"
+      },
+      {
+        "id": "walnut",
+        "name": "ウォルナット",
+        "hex": "#5e3d27",
+        "price": 8000
+      },
+      {
+        "id": "cherry",
+        "name": "チェリー",
+        "hex": "#9c5a38",
+        "price": 6000
+      },
+      {
+        "id": "ash_white",
+        "name": "白木（アッシュ）",
+        "hex": "#e0cfb0"
+      },
+      {
+        "id": "black",
+        "name": "黒塗り",
+        "hex": "#2a2624"
+      }
+    ],
+    "fabric": [
+      {
+        "id": "ivory",
+        "name": "アイボリー",
+        "hex": "#e8e0cf"
+      },
+      {
+        "id": "gray",
+        "name": "グレー",
+        "hex": "#8c8c88"
+      },
+      {
+        "id": "charcoal",
+        "name": "チャコール",
+        "hex": "#3a3a3a"
+      },
+      {
+        "id": "navy",
+        "name": "ネイビー",
+        "hex": "#26325a"
+      },
+      {
+        "id": "green",
+        "name": "モスグリーン",
+        "hex": "#5a6b45"
+      },
+      {
+        "id": "mustard",
+        "name": "マスタード",
+        "hex": "#c99a33"
+      },
+      {
+        "id": "terracotta",
+        "name": "テラコッタ",
+        "hex": "#b0603e"
+      },
+      {
+        "id": "leather_brown",
+        "name": "本革（キャメル）",
+        "hex": "#a0663a",
+        "price": 12000,
+        "roughMul": 0.55
+      },
+      {
+        "id": "leather_black",
+        "name": "本革（黒）",
+        "hex": "#231f1d",
+        "price": 12000,
+        "roughMul": 0.55
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "frame",
+      "name": "木部",
+      "index": 0,
+      "palette": "wood",
+      "default": "oak",
+      "materials": [
+        "oil",
+        "urethane",
+        "matte"
+      ]
+    },
+    {
+      "id": "seat",
+      "name": "座面の張り地",
+      "index": 1,
+      "palette": "fabric",
+      "default": "gray",
+      "look": {
+        "roughness": 0.95,
+        "detail": 1
+      }
+    },
+    {
+      "id": "back",
+      "name": "背もたれの張り地",
+      "index": 2,
+      "palette": "fabric",
+      "default": "gray",
+      "look": {
+        "roughness": 0.95,
+        "detail": 1
+      }
+    }
+  ],
+  "materials": {
+    "oil": {
+      "name": "オイル仕上げ",
+      "price": 0,
+      "roughness": 0.7,
+      "detail": 1
+    },
+    "urethane": {
+      "name": "ウレタン（つや）",
+      "price": 3000,
+      "roughness": 0.25,
+      "detail": 0.7
+    },
+    "matte": {
+      "name": "ウレタン（つや消し）",
+      "price": 3000,
+      "roughness": 0.55,
+      "detail": 0.8
+    }
+  },
+  "customColor": {
+    "price": 2000,
+    "label": "好きな張り地の色（1色ごと）"
+  },
+  "variantLabel": "種類",
+  "defaultVariant": "side",
+  "variants": [
+    {
+      "id": "side",
+      "name": "サイドチェア",
+      "size": "幅44×奥行42cm",
+      "basePrice": 38000,
+      "priceLabel": "ダイニングチェア（サイド）",
+      "icon": "M12 4 V36 M28 4 V36 M12 20 H28 M12 4 H28 M10 20 H30",
+      "buildOpts": {
+        "arms": false
+      }
+    },
+    {
+      "id": "arm",
+      "name": "アームチェア",
+      "size": "幅44×奥行42cm",
+      "basePrice": 52000,
+      "priceLabel": "ダイニングチェア（アーム）",
+      "icon": "M12 4 V36 M28 4 V36 M12 20 H28 M12 4 H28 M8 14 H14 M26 14 H32 M8 14 V36 M32 14 V36",
+      "buildOpts": {
+        "arms": true
+      }
+    }
+  ],
+  "options": [
+    {
+      "id": "legs",
+      "label": "脚の形",
+      "default": "straight",
+      "choices": [
+        {
+          "id": "straight",
+          "name": "角脚",
+          "price": 0,
+          "buildOpts": {
+            "legs": "straight"
+          }
+        },
+        {
+          "id": "taper",
+          "name": "丸脚（先細り）",
+          "price": 4000,
+          "buildOpts": {
+            "legs": "taper"
+          }
+        }
+      ]
+    },
+    {
+      "id": "back",
+      "label": "背もたれの高さ",
+      "default": "std",
+      "choices": [
+        {
+          "id": "std",
+          "name": "ふつう",
+          "price": 0,
+          "buildOpts": {
+            "back": "std"
+          }
+        },
+        {
+          "id": "high",
+          "name": "ハイバック",
+          "price": 6000,
+          "buildOpts": {
+            "back": "high"
+          }
+        }
+      ]
+    }
+  ],
+  "sizeLabel": "座面の高さ",
+  "sizeUnit": "",
+  "sizes": [
+    "42cm（低め）",
+    "44cm（ふつう）",
+    "46cm（高め）"
+  ],
+  "orderNote": "受注後に1脚ずつ組み上げるため、お届けまで約6週間かかります（デモの仮の値です）。",
+  "presets": [
+    {
+      "name": "オークにグレー",
+      "colors": {
+        "frame": "oak",
+        "seat": "gray",
+        "back": "gray"
+      },
+      "material": "oil"
+    },
+    {
+      "name": "ウォルナットに革",
+      "colors": {
+        "frame": "walnut",
+        "seat": "leather_brown",
+        "back": "leather_brown"
+      },
+      "material": "oil"
+    },
+    {
+      "name": "白木にマスタード",
+      "colors": {
+        "frame": "ash_white",
+        "seat": "mustard",
+        "back": "ivory"
+      },
+      "material": "matte"
+    },
+    {
+      "name": "黒にテラコッタ",
+      "colors": {
+        "frame": "black",
+        "seat": "terracotta",
+        "back": "terracotta"
+      },
+      "material": "urethane"
+    }
+  ],
+  "presetDots": [
+    "frame",
+    "seat",
+    "back"
+  ],
+  "viewButtons": [
+    {
+      "id": "naname",
+      "label": "斜め"
+    },
+    {
+      "id": "front",
+      "label": "正面"
+    },
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "back",
+      "label": "後ろ"
+    },
+    {
+      "id": "top",
+      "label": "上"
+    }
+  ],
+  "snapshotViews": [
+    "naname",
+    "front",
+    "side"
+  ],
+  "views": {
+    "naname": [
+      2.4,
+      1.5,
+      2.6
+    ],
+    "front": [
+      0.0,
+      0.5,
+      3.6
+    ],
+    "side": [
+      3.6,
+      0.5,
+      0.01
+    ],
+    "back": [
+      -1.2,
+      0.8,
+      -3.3
+    ],
+    "top": [
+      0.0,
+      3.6,
+      0.8
+    ]
+  }
+}

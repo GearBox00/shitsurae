@@ -418,5 +418,53 @@
       0.9
     ]
   },
-  "initialView": "naname"
+  "initialView": "naname",
+  "options": [
+    {
+      "id": "pocket",
+      "label": "ポケット",
+      "default": "front",
+      "choices": [
+        {
+          "id": "front",
+          "name": "前だけ",
+          "price": 0,
+          "buildOpts": {
+            "pocket": "front"
+          }
+        },
+        {
+          "id": "both",
+          "name": "前と後ろ",
+          "price": 500,
+          "buildOpts": {
+            "pocket": "both"
+          }
+        }
+      ]
+    },
+    {
+      "id": "snap",
+      "label": "口の留め具",
+      "default": "none",
+      "choices": [
+        {
+          "id": "none",
+          "name": "なし",
+          "price": 0,
+          "buildOpts": {
+            "snap": false
+          }
+        },
+        {
+          "id": "magnet",
+          "name": "マグネットボタン",
+          "price": 800,
+          "buildOpts": {
+            "snap": true
+          }
+        }
+      ]
+    }
+  ]
 }

@@ -387,5 +387,69 @@
       2.6
     ]
   },
-  "initialView": "naname"
+  "initialView": "naname",
+  "options": [
+    {
+      "id": "width",
+      "label": "幅",
+      "default": "std",
+      "choices": [
+        {
+          "id": "thin",
+          "name": "細め（2.0mm）",
+          "price": 0,
+          "buildOpts": {
+            "width": 2.0
+          }
+        },
+        {
+          "id": "std",
+          "name": "ふつう（2.4mm）",
+          "price": 0,
+          "buildOpts": {
+            "width": 2.4
+          }
+        },
+        {
+          "id": "wide",
+          "name": "太め（3.0mm）",
+          "price": 3000,
+          "buildOpts": {
+            "width": 3.0
+          }
+        }
+      ]
+    },
+    {
+      "id": "stone",
+      "label": "石の大きさ",
+      "default": "m",
+      "choices": [
+        {
+          "id": "s",
+          "name": "小さめ",
+          "price": 0,
+          "buildOpts": {
+            "stone": 2.2
+          }
+        },
+        {
+          "id": "m",
+          "name": "ふつう",
+          "price": 15000,
+          "buildOpts": {
+            "stone": 2.6
+          }
+        },
+        {
+          "id": "l",
+          "name": "大きめ",
+          "price": 45000,
+          "buildOpts": {
+            "stone": 3.2
+          }
+        }
+      ]
+    }
+  ]
 }

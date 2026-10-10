@@ -188,6 +188,8 @@ body.editing .stage-hint, body.editing .views { opacity: .35; }
 }
 .sw.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
+.opt-label { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
+.opt .seg { flex-wrap: wrap; }
 .seg { display: flex; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; background: #fff; }
 .seg button {
   flex: 1; border: 0; background: none; padding: 8px 6px; cursor: pointer; font-size: 13px; font-weight: 500;

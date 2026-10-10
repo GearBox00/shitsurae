@@ -1,0 +1,383 @@
+{
+  "id": "mug",
+  "name": "マグカップ",
+  "category": "食器",
+  "build": "mug",
+  "basePrice": 3800,
+  "priceLabel": "マグカップ（ストレート）",
+  "partsMapScale": 30,
+  "shadow": [
+    1.6,
+    1.6
+  ],
+  "credit": "マグカップの3Dモデル: GearBox がプログラムで作成",
+  "materialLabel": "釉薬の仕上げ",
+  "defaultMaterial": "gloss",
+  "initialView": "naname",
+  "palettes": {
+    "glaze": [
+      {
+        "id": "shiro",
+        "name": "白",
+        "hex": "#f1eee6"
+      },
+      {
+        "id": "kinari",
+        "name": "生成り",
+        "hex": "#e4d9c2"
+      },
+      {
+        "id": "ai",
+        "name": "藍",
+        "hex": "#27406b"
+      },
+      {
+        "id": "ruri",
+        "name": "瑠璃",
+        "hex": "#2c4fa0"
+      },
+      {
+        "id": "oribe",
+        "name": "織部",
+        "hex": "#3f6b44"
+      },
+      {
+        "id": "ame",
+        "name": "飴",
+        "hex": "#8a4a1c"
+      },
+      {
+        "id": "kuro",
+        "name": "黒",
+        "hex": "#232120"
+      },
+      {
+        "id": "sakura",
+        "name": "桜",
+        "hex": "#e7c1c0"
+      },
+      {
+        "id": "hai",
+        "name": "灰",
+        "hex": "#9a9a94"
+      }
+    ],
+    "clay": [
+      {
+        "id": "shiro",
+        "name": "白い土",
+        "hex": "#e6ddcd"
+      },
+      {
+        "id": "aka",
+        "name": "赤い土",
+        "hex": "#a8643f"
+      },
+      {
+        "id": "kuro",
+        "name": "黒い土",
+        "hex": "#3c3532"
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "outer",
+      "name": "外側",
+      "index": 0,
+      "palette": "glaze",
+      "default": "ai",
+      "materials": [
+        "gloss",
+        "matte",
+        "crack"
+      ]
+    },
+    {
+      "id": "inner",
+      "name": "内側",
+      "index": 1,
+      "palette": "glaze",
+      "default": "shiro",
+      "materials": [
+        "gloss",
+        "matte",
+        "crack"
+      ]
+    },
+    {
+      "id": "handle",
+      "name": "持ち手",
+      "index": 2,
+      "palette": "glaze",
+      "default": "ai",
+      "materials": [
+        "gloss",
+        "matte",
+        "crack"
+      ]
+    },
+    {
+      "id": "rim",
+      "name": "口縁",
+      "index": 3,
+      "palette": "glaze",
+      "default": "ame",
+      "materials": [
+        "gloss",
+        "matte",
+        "crack"
+      ]
+    },
+    {
+      "id": "foot",
+      "name": "底（土）",
+      "index": 4,
+      "palette": "clay",
+      "default": "shiro",
+      "look": {
+        "roughness": 0.95,
+        "detail": 1
+      }
+    }
+  ],
+  "materials": {
+    "gloss": {
+      "name": "つや",
+      "price": 0,
+      "roughness": 0.14,
+      "detail": 0
+    },
+    "matte": {
+      "name": "マット",
+      "price": 300,
+      "roughness": 0.72,
+      "detail": 0.2
+    },
+    "crack": {
+      "name": "貫入（細かいひび模様）",
+      "price": 800,
+      "roughness": 0.22,
+      "detail": 1
+    }
+  },
+  "variantLabel": "形",
+  "defaultVariant": "straight",
+  "variants": [
+    {
+      "id": "straight",
+      "name": "ストレート",
+      "size": "口径8cm・高さ9cm",
+      "basePrice": 3800,
+      "priceLabel": "マグカップ（ストレート）",
+      "icon": "M11 8 H29 V33 Q29 35 27 35 H13 Q11 35 11 33 Z M29 14 Q36 14 36 20 Q36 26 29 26",
+      "buildOpts": {
+        "shape": "straight"
+      }
+    },
+    {
+      "id": "round",
+      "name": "まるみ",
+      "size": "口径8cm・高さ9cm",
+      "basePrice": 4200,
+      "priceLabel": "マグカップ（まるみ）",
+      "icon": "M12 8 H28 Q32 20 28 34 H12 Q8 20 12 8 Z M30 14 Q37 15 36 21 Q35 27 29 27",
+      "buildOpts": {
+        "shape": "round"
+      }
+    },
+    {
+      "id": "flare",
+      "name": "すり鉢",
+      "size": "口径9cm・高さ9cm",
+      "basePrice": 4200,
+      "priceLabel": "マグカップ（すり鉢）",
+      "icon": "M8 8 H32 L27 35 H13 Z M30 14 Q37 15 35 21 Q34 26 28 26",
+      "buildOpts": {
+        "shape": "flare",
+        "r": 4.5
+      }
+    }
+  ],
+  "options": [
+    {
+      "id": "grip",
+      "label": "持ち手の形",
+      "default": "round",
+      "choices": [
+        {
+          "id": "round",
+          "name": "丸",
+          "price": 0,
+          "buildOpts": {
+            "grip": "round"
+          }
+        },
+        {
+          "id": "square",
+          "name": "角",
+          "price": 0,
+          "buildOpts": {
+            "grip": "square"
+          }
+        }
+      ]
+    }
+  ],
+  "text": {
+    "part": "outer",
+    "facing": "front",
+    "label": "名入れ（焼き付け）",
+    "placeholder": "例: Haru",
+    "maxLength": 10,
+    "price": 1000,
+    "depth": 0.6,
+    "fonts": [
+      {
+        "id": "script",
+        "name": "筆記体",
+        "css": "400 130px 'Caveat', cursive"
+      },
+      {
+        "id": "fude",
+        "name": "筆",
+        "css": "400 140px 'Yuji Syuku', serif"
+      }
+    ],
+    "colorLabel": "文字の色",
+    "colors": [
+      {
+        "hex": "#f2efe6",
+        "name": "白"
+      },
+      {
+        "hex": "#222222",
+        "name": "黒"
+      },
+      {
+        "hex": "#27406b",
+        "name": "藍"
+      },
+      {
+        "hex": "#c9a24a",
+        "name": "金",
+        "metal": 1
+      }
+    ]
+  },
+  "sizeLabel": "数量",
+  "sizeUnit": "",
+  "sizes": [
+    "1個",
+    "2個（ペア）",
+    "4個",
+    "6個"
+  ],
+  "orderNote": "釉薬を掛けて焼き上げるため、お届けまで約3週間かかります（デモの仮の値です）。",
+  "presets": [
+    {
+      "name": "藍に飴の縁",
+      "colors": {
+        "outer": "ai",
+        "inner": "shiro",
+        "handle": "ai",
+        "rim": "ame",
+        "foot": "shiro"
+      },
+      "material": "gloss"
+    },
+    {
+      "name": "織部のマット",
+      "colors": {
+        "outer": "oribe",
+        "inner": "kinari",
+        "handle": "oribe",
+        "rim": "oribe",
+        "foot": "aka"
+      },
+      "material": "matte"
+    },
+    {
+      "name": "白の貫入",
+      "colors": {
+        "outer": "kinari",
+        "inner": "kinari",
+        "handle": "kinari",
+        "rim": "ame",
+        "foot": "aka"
+      },
+      "material": "crack"
+    },
+    {
+      "name": "黒と桜",
+      "colors": {
+        "outer": "kuro",
+        "inner": "sakura",
+        "handle": "kuro",
+        "rim": "kuro",
+        "foot": "kuro"
+      },
+      "material": "matte"
+    }
+  ],
+  "presetDots": [
+    "outer",
+    "inner",
+    "handle",
+    "rim"
+  ],
+  "viewButtons": [
+    {
+      "id": "front",
+      "label": "正面"
+    },
+    {
+      "id": "naname",
+      "label": "斜め"
+    },
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "top",
+      "label": "中"
+    },
+    {
+      "id": "bottom",
+      "label": "底"
+    }
+  ],
+  "snapshotViews": [
+    "naname",
+    "front",
+    "top"
+  ],
+  "views": {
+    "front": [
+      0.0,
+      0.6,
+      3.6
+    ],
+    "naname": [
+      2.0,
+      1.6,
+      2.6
+    ],
+    "side": [
+      3.6,
+      0.6,
+      0.01
+    ],
+    "top": [
+      0.0,
+      3.6,
+      0.9
+    ],
+    "bottom": [
+      0.0,
+      -3.6,
+      0.6
+    ]
+  }
+}

@@ -22,6 +22,8 @@ function defaultState() {
   const s = { colors, material, text: { value: '', font: P.text?.fonts[0].id, color: P.text?.colors[0].hex } };
   if (P.variants) s.variant = P.defaultVariant || P.variants[0].id;
   if (P.aging) s.age = 0;
+  // 形に関わる選択肢（傘の柄・手元の形、指輪の幅など）。商品設定の options の default から始める
+  if (P.options) s.options = Object.fromEntries(P.options.map(o => [o.id, o.default || o.choices[0].id]));
   if (shapeEnabled()) s.shape = null;   // null = 見本の形
   if (defectsOn()) s.defects = null;    // null = 見本の割れと欠け
   if (defectsOn()) s.plan = null;       // null = 丸い外形（真上の写真で外形を決めたときだけ値が入る）
@@ -91,11 +93,17 @@ function textCfg() {
 function effModel() {
   const E = eff();
   // 傘・指輪・トートバッグは、設定の build（と器の種類ごとの buildOpts）から形を組み立てる
-  if (P.build) { E.vessel = buildItem(P.build, { ...(P.buildOpts || {}), ...(variantOf()?.buildOpts || {}) }); return E; }
+  if (P.build) {
+    const chosen = (P.options || []).map(o => choiceOf(o).buildOpts || {});
+    E.vessel = buildItem(P.build, Object.assign({}, P.buildOpts, variantOf()?.buildOpts, ...chosen));
+    return E;
+  }
   if (shapeOf()) { E.vessel = buildVessel({ ...shapeOf(), plan: state.plan || null }, { mode: P.vesselMode || 'lacquer' }); E.text = textCfg(); }
   return E;
 }
-const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null, state.plan ?? null]);
+const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null, state.plan ?? null, state.options ?? null]);
+// 選んでいる選択肢（無ければ最初のもの）
+const choiceOf = o => o.choices.find(c => c.id === state.options?.[o.id]) || o.choices[0];
 
 // 色の一覧は文字列（#rrggbb）でも、{hex, name, metal} の形でも書けるようにそろえる
 function normalizeProduct(p) {
@@ -130,6 +138,7 @@ function price() {
     const c = colorOf(pt, state.colors[pt.id]);
     if (c.price) lines.push({ label: `${pt.name}: ${c.name}`, amount: c.price });
   });
+  (P.options || []).forEach(o => { const c = choiceOf(o); if (c.price) lines.push({ label: `${o.label}: ${c.name}`, amount: c.price }); });
   const customs = P.parts.filter(pt => colorOf(pt, state.colors[pt.id]).custom);
   if (customs.length && P.customColor) lines.push({ label: `好きな色 ×${customs.length}`, amount: customs.length * P.customColor.price });
   if (P.text && state.text.value) lines.push({ label: P.text.label, amount: P.text.price });
@@ -182,6 +191,10 @@ function sanitize(obj) {
   });
   if (P.materials[obj.material]) s.material = obj.material;
   if (P.variants?.some(v => v.id === obj.variant)) s.variant = obj.variant;
+  // 選択肢は、設定にある id だけ受け入れる
+  if (P.options && obj.options && typeof obj.options === 'object') {
+    P.options.forEach(o => { const v = obj.options[o.id]; if (typeof v === 'string' && o.choices.some(c => c.id === v)) s.options[o.id] = v; });
+  }
   if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
   if (shapeEnabled() && obj.shape) s.shape = sanitizeShape(obj.shape);
   if (defectsOn() && obj.defects) s.defects = sanitizeDefects(obj.defects);
@@ -260,6 +273,17 @@ function renderVariants() {
     </button>`).join('');
 }
 
+function renderOptions() {
+  if (!P.options) return;
+  $('options').innerHTML = P.options.map(o => `
+    <div class="opt">
+      <p class="opt-label">${esc(o.label)}</p>
+      <div class="seg" role="radiogroup" aria-label="${esc(o.label)}">${o.choices.map(c => `
+        <button type="button" role="radio" aria-checked="${choiceOf(o).id === c.id}" data-opt="${esc(o.id)}" data-choice="${esc(c.id)}">${esc(c.name)}${c.price ? `<small>+${yen(c.price)}</small>` : ''}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
 function renderAge() {
   if (!P.aging) return;
   const v = Math.round((state.age || 0) * 100);
@@ -306,6 +330,7 @@ function render() {
   renderShape();
   renderAge();
   renderVariants();
+  renderOptions();
   renderParts();
   renderText();
   const { lines, total } = price();
@@ -515,6 +540,8 @@ function specRows() {
   if (sh && (state.shape || P.defaultShape)) {
     rows.unshift([P.variantLabel || '形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
   }
+  // 見た目だけの選択肢（傘を閉じた姿など）は発注書に出さない
+  (P.options || []).filter(o => !o.viewOnly).forEach(o => rows.push([o.label, esc(choiceOf(o).name)]));
   if (P.text && state.text.value) {
     const f = P.text.fonts.find(f => f.id === state.text.font);
     const col = P.text.colors.find(c => c.hex === state.text.color);
@@ -588,6 +615,14 @@ async function main() {
       const b = e.target.closest('[data-variant]');
       // 写真から作った器を使っているときに種類を押したら、その見本の器に戻す
       if (b && (b.dataset.variant !== state.variant || state.shape)) commit(s => { s.variant = b.dataset.variant; if (s.shape) s.shape = null; });
+    });
+  }
+
+  if (P.options) {
+    $('optionSec').hidden = false;
+    $('options').addEventListener('click', e => {
+      const b = e.target.closest('[data-opt]');
+      if (b && state.options[b.dataset.opt] !== b.dataset.choice) commit(s => { s.options = { ...s.options, [b.dataset.opt]: b.dataset.choice }; });
     });
   }
 
