@@ -389,16 +389,18 @@ export const chipOf = c => (Array.isArray(c) ? [c[0], c[1]] : [c, 1]);
 //   axis 0（壁）：高さも含めて測り、半径方向は器の厚みの分を数えない
 //   axis 1（平らな面）：真上から見た位置（X と Z）だけで測る。高さの差が THRU_V 以内なら上の面も裏の面も同じ扱い
 //   （皿の口縁近くは上と裏が斜めにずれるので、高さを測りに入れると裏の割れが点線になる）
-function segDist(X, Py, Pz, Xb, Qy, Qz, axis) {
+function segDist(X, Py, Pz, Xb, Qy, Qz, axis, tol = T * 1.15) {
   if (axis === 1) {
     const L = Xb * Xb + Qz * Qz + 1e-9;
     const k = Math.max(0, Math.min(1, (X * Xb + Pz * Qz) / L));
     if (Math.abs(Py - k * Qy) > THRU_V) return 99;
     return Math.hypot(X - k * Xb, Pz - k * Qz);
   }
-  const L = Xb * Xb + Qy * Qy + Qz * Qz + 1e-9;
-  const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy + Pz * Qz) / L));
-  return Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - T * 1.15));
+  // 線のどこに近いかは、回る向きと高さだけで決める。半径の差（内外）も含めると、内側の面では
+  // 近い位置が線の折れ目に引き寄せられ、割れが点線になる。半径の差は、そのあと厚みの分を引いて数える
+  const L = Xb * Xb + Qy * Qy + 1e-9;
+  const k = Math.max(0, Math.min(1, (X * Xb + Py * Qy) / L));
+  return Math.hypot(X - k * Xb, Py - k * Qy, Math.max(0, Math.abs(Pz - k * Qz) - tol));
 }
 
 // 割れの長さ（cm）
@@ -499,6 +501,15 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
   const height = new Float32Array(W * S);
   const touched = new Uint8Array(W * S);
 
+  // 横に貫く割れで「器の厚みの分」として数えない半径の差。壁が寝ているほど、同じ高さで見た内と外の差は
+  // 厚み÷(壁の傾きの縦の割合) に広がるので、行ごとの傾きから決める（寝すぎた所は厚みの6倍まで）
+  const rowTol = new Float32Array(S);
+  for (let row = 0; row < S; row++) {
+    const a = Math.max(0, row - 2), b = Math.min(S - 1, row + 2);
+    const dr = rowR[b] - rowR[a], dy = rowY[b] - rowY[a], L = Math.hypot(dr, dy);
+    rowTol[row] = T * 1.15 * (L > 1e-6 ? Math.min(6, L / Math.max(Math.abs(dy), L / 6)) : 1);
+  }
+
   function paint(defs) {
     const pImg = new ImageData(new Uint8ClampedArray(baseParts.data), W, S);
     const nImg = new ImageData(new Uint8ClampedArray(baseNormal.data), W, S);
@@ -517,8 +528,8 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
         for (let row = 0; row < S; row++) {
           const Y = rowY[row];
           if (Y < lo || Y > hi) continue;
-          const Rp = rowR[row], rr = Math.max(Rp, 0.3);
-          if (Math.abs(Rp - ra) > Math.abs(rb - ra) + T * 1.15 + 0.4 && Math.abs(Rp - rb) > T * 1.15 + 0.4) continue;
+          const Rp = rowR[row], rr = Math.max(Rp, 0.3), tol = ax === 1 ? 0 : rowTol[row];
+          if (Math.abs(Rp - ra) > Math.abs(rb - ra) + tol + 0.4 && Math.abs(Rp - rb) > tol + 0.4) continue;
           // 線の点が器の外（半径の外）にはみ出している所は、その器の外側の半径で考える
           const span = 0.4 / rr + Math.abs(dTheta);
           const tMid = ta + dTheta / 2;
@@ -527,7 +538,7 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
           for (let col = c0; col <= c1; col++) {
             const cc = ((col % W) + W) % W, th = ((cc + 0.5) / W) * 2 * Math.PI;
             const X = wrapPi(th - ta) * rr, Py = Y - ya, Pz = Rp - ra;
-            const d = segDist(X, Py, Pz, Xb, Qy, Qz, ax);
+            const d = segDist(X, Py, Pz, Xb, Qy, Qz, ax, rowTol[row]);
             const o = row * W + cc;
             if (d < 0.2) { if (d < dist[o]) dist[o] = d; touch(o); }
           }

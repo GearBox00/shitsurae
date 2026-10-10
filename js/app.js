@@ -643,9 +643,7 @@ async function main() {
   if (shapeEnabled()) {
     $('shapeSec').hidden = false;
     $('tipBroken').hidden = !defectsOn();
-    $('photoInput').addEventListener('change', e => {
-      const file = e.target.files[0];
-      e.target.value = '';   // 同じ写真を選び直しても反応するように
+    const openSide = file => {
       $('shapeErr').textContent = '';
       openPhotoShape(file, {
         // 写真の器を使っていればその口径、無ければ写真用の初期値（徳利の口径などを引き継がない）
@@ -653,21 +651,40 @@ async function main() {
         onApply: shape => commit(s => { s.shape = shape; }),
         onError: msg => { $('shapeErr').textContent = msg; },
       });
+    };
+    $('photoInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      e.target.value = '';   // 同じ写真を選び直しても反応するように
+      openSide(file);
     });
+    // 手元に写真が無くても流れを試せるよう、こちらで用意した見本の画像を使う
+    const sampleFile = async (path, err) => {
+      try {
+        const r = await fetch(path);
+        if (!r.ok) throw new Error(r.status);
+        const b = await r.blob();
+        return new File([b], path.split('/').pop(), { type: b.type || 'image/jpeg' });
+      } catch { $(err).textContent = '見本の写真を読み込めませんでした。通信の状態を確かめて、もう一度お試しください。'; return null; }
+    };
+    $('shapeSample').addEventListener('click', async () => { const f = await sampleFile('assets/samples/side.jpg', 'shapeErr'); if (f) openSide(f); });
     $('shapeReset').addEventListener('click', () => commit(s => { s.shape = null; }));
     // 真上の写真で丸くない外形を決める（金継ぎだけ）
     if (defectsOn()) {
       $('planRow').hidden = false;
       $('tipPlan').hidden = false;
-      $('planInput').addEventListener('change', e => {
-        const file = e.target.files[0];
-        e.target.value = '';
+      const openTop = file => {
         $('planErr').textContent = '';
         openPlanShape(file, {
           onApply: plan => commit(s => { s.plan = plan; }),
           onError: msg => { $('planErr').textContent = msg; },
         });
+      };
+      $('planInput').addEventListener('change', e => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        openTop(file);
       });
+      $('planSample').addEventListener('click', async () => { const f = await sampleFile('assets/samples/top.jpg', 'planErr'); if (f) openTop(f); });
       $('planReset').addEventListener('click', () => commit(s => { s.plan = null; }));
     }
   }
