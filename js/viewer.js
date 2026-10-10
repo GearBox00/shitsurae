@@ -267,7 +267,9 @@ if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;
     const n = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
     let theta = Math.atan2(lp.z, lp.x);
     if (theta < 0) theta += Math.PI * 2;
-    return { theta, y: lp.y, r: Math.hypot(lp.x, lp.z), local: lp, normal: n, part: hit.uv ? this.partAtUv(hit.uv) : -1 };
+    // 丸くない器は向きごとに伸び縮みさせているので、断面の上の半径に戻す（割れの点は断面の上で持つ）
+    const F = this.vessel?.planScale ? this.vessel.planScale(theta) : 1;
+    return { theta, y: lp.y, r: Math.hypot(lp.x, lp.z) / F, local: lp, normal: n, part: hit.uv ? this.partAtUv(hit.uv) : -1 };
   }
 
   // なぞっている途中の線（器の表面から少し浮かせて描く）

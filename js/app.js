@@ -1,8 +1,9 @@
 // シミュレーター画面の操作。状態は1つのオブジェクトにまとめ、URLにも書き出す。
 import { Viewer } from './viewer.js';
 import { store, yen, newOrderNo, safeImg } from './store.js';
-import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf, CHIP_SCALE, chipOf } from './vessel.js';
+import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf, CHIP_SCALE, chipOf, sanitizePlan, planChipCount, planSpan } from './vessel.js';
 import { openPhotoShape } from './photo-shape.js';
+import { openPlanShape } from './plan-shape.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -22,6 +23,7 @@ function defaultState() {
   if (P.aging) s.age = 0;
   if (shapeEnabled()) s.shape = null;   // null = 見本の形
   if (defectsOn()) s.defects = null;    // null = 見本の割れと欠け
+  if (defectsOn()) s.plan = null;       // null = 丸い外形（真上の写真で外形を決めたときだけ値が入る）
   return s;
 }
 
@@ -87,10 +89,10 @@ function textCfg() {
 }
 function effModel() {
   const E = eff();
-  if (shapeOf()) { E.vessel = buildVessel(shapeOf(), { mode: P.vesselMode || 'lacquer' }); E.text = textCfg(); }
+  if (shapeOf()) { E.vessel = buildVessel({ ...shapeOf(), plan: state.plan || null }, { mode: P.vesselMode || 'lacquer' }); E.text = textCfg(); }
   return E;
 }
-const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null]);
+const modelKey = () => JSON.stringify([state.variant ?? null, state.shape ?? null, state.plan ?? null]);
 
 // 色の一覧は文字列（#rrggbb）でも、{hex, name, metal} の形でも書けるようにそろえる
 function normalizeProduct(p) {
@@ -138,6 +140,9 @@ function price() {
     const big = largeChips(state.defects);
     if (big && dp.perLargeChip) lines.push({ label: `大きな欠け ×${big}`, amount: big * dp.perLargeChip });
   }
+  // 真上の写真から取り込んだ欠けは、大きな欠けと同じ扱い
+  const pc = planChipCount(state.plan);
+  if (dp && pc && dp.perLargeChip) lines.push({ label: `写真から取り込んだ欠け ×${pc}`, amount: pc * dp.perLargeChip });
   return { lines, total: lines.reduce((a, l) => a + l.amount, 0) };
 }
 
@@ -177,6 +182,7 @@ function sanitize(obj) {
   if (P.aging && typeof obj.age === 'number' && obj.age >= 0 && obj.age <= 1) s.age = obj.age;
   if (shapeEnabled() && obj.shape) s.shape = sanitizeShape(obj.shape);
   if (defectsOn() && obj.defects) s.defects = sanitizeDefects(obj.defects);
+  if (defectsOn() && obj.plan) s.plan = sanitizePlan(obj.plan);
   if (P.text && obj.text) {
     if (typeof obj.text.value === 'string') s.text.value = obj.text.value.slice(0, P.text.maxLength);
     if (P.text.fonts.some(f => f.id === obj.text.font)) s.text.font = obj.text.font;
@@ -265,6 +271,14 @@ function renderShape() {
   const sample = P.defaultShapeLabel || (variantOf() ? `見本の器（${variantOf().name}）` : '見本の形');
   $('shapeStatus').textContent = sh ? `写真から作った形（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm）` : sample;
   $('shapeReset').hidden = !sh;
+  if (defectsOn()) {
+    const base = shapeOf(), pl = state.plan;
+    if (pl && base) {
+      const { length, width } = planSpan(pl, base.rim / 2), n = planChipCount(pl);
+      $('planStatus').textContent = `真上の写真から作った外形（長さ ${length.toFixed(1)}cm・幅 ${width.toFixed(1)}cm${n ? `・欠け ${n}か所` : ''}）`;
+    } else $('planStatus').textContent = '丸い外形';
+    $('planReset').hidden = !pl;
+  }
 }
 
 function renderDefects() {
@@ -490,6 +504,10 @@ function specRows() {
   const v = variantOf();
   if (v && !state.shape) rows.unshift([P.variantLabel || '種類', `${esc(v.name)}（${esc(v.size || '')}）`]);
   if (defectsOn() && viewer?.canEditDefects() && shapeOf()) rows.push(['割れと欠け', esc(defectSummary(currentDefects()))]);
+  if (defectsOn() && state.plan && shapeOf()) {
+    const { length, width } = planSpan(state.plan, shapeOf().rim / 2), n = planChipCount(state.plan);
+    rows.push(['外形', `真上の写真から作った外形（長さ ${length.toFixed(1)}cm・幅 ${width.toFixed(1)}cm）${n ? `・写真から取り込んだ欠け ${n}か所` : ''}`]);
+  }
   const sh = shapeOf();
   if (sh && (state.shape || P.defaultShape)) {
     rows.unshift([P.variantLabel || '形', `${state.shape ? '写真から作った形' : esc(P.defaultShapeLabel || '見本の形')}（口径 ${sh.rim}cm・高さ ${sh.h.toFixed(1)}cm・高台の直径 ${(sh.rf * 2).toFixed(1)}cm）`]);
@@ -599,6 +617,21 @@ async function main() {
       });
     });
     $('shapeReset').addEventListener('click', () => commit(s => { s.shape = null; }));
+    // 真上の写真で丸くない外形を決める（金継ぎだけ）
+    if (defectsOn()) {
+      $('planRow').hidden = false;
+      $('tipPlan').hidden = false;
+      $('planInput').addEventListener('change', e => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        $('planErr').textContent = '';
+        openPlanShape(file, {
+          onApply: plan => commit(s => { s.plan = plan; }),
+          onError: msg => { $('planErr').textContent = msg; },
+        });
+      });
+      $('planReset').addEventListener('click', () => commit(s => { s.plan = null; }));
+    }
   }
 
   // 割れをなぞる（金継ぎ）

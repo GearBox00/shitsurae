@@ -114,8 +114,9 @@ export function buildVessel(shape, { mode = 'lacquer', texSize = 1024 } = {}) {
     });
     for (let j = 0; j <= NU; j++) {
       const th = (2 * Math.PI * j) / NU, c = Math.cos(th), s = Math.sin(th);
+      const F = planAt(shape.plan?.f, th, 1);   // 丸くない器：真上の写真から取った、向きごとの半径の倍率
       pts.forEach(([r, y, v], i) => {
-        pos.push(r * c, y, r * s);
+        pos.push(r * F * c, y, r * F * s);
         nor.push(n2[i][0] * c, n2[i][1], n2[i][0] * s);
         uv.push(j / NU, v);
       });
@@ -140,6 +141,20 @@ export function buildVessel(shape, { mode = 'lacquer', texSize = 1024 } = {}) {
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geometry.setIndex(idx);
+  if (shape.plan?.f) {
+    // 伸び縮みさせた器は、面の向きを形から計算し直す。一周の始まりと終わりは同じ場所なので、向きをそろえる
+    geometry.computeVertexNormals();
+    const n = geometry.attributes.normal.array;
+    let base = 0;
+    for (const [, pts] of prof) {
+      const m = pts.length;
+      for (let i = 0; i < m; i++) {
+        const a = (base + i) * 3, b = (base + NU * m + i) * 3;
+        for (let k = 0; k < 3; k++) { const v = (n[a + k] + n[b + k]) / 2; n[a + k] = v; n[b + k] = v; }
+      }
+      base += (NU + 1) * m;
+    }
+  }
 
   // 画像の各行（v）が断面のどこにあたるか
   const S = texSize;
@@ -158,7 +173,9 @@ export function buildVessel(shape, { mode = 'lacquer', texSize = 1024 } = {}) {
     rowKind[row] = b[3];
   }
 
-  if (mode === 'kintsugi') return { geometry, ...kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) };
+  // 3D上の点を、伸び縮みさせる前の位置に戻すための倍率（タップした位置を断面の上の位置にする）
+  const planScale = shape.plan?.f ? th => planAt(shape.plan.f, th, 1) : null;
+  if (mode === 'kintsugi') return { geometry, planScale, ...kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) };
 
   // 部位：外側0・内側1・高台2・縁3（縁の近くも縁にする）
   const parts = document.createElement('canvas');
@@ -225,6 +242,14 @@ function mulberry32(a) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+// 外形の値（角度 -π から一周を等分した並び。値は各区間の中央）を角度で引く。
+// 曲線（Catmull-Rom）でつなぐので、値の間で角ばらない。一周つながる
+function planAt(arr, th, dflt) {
+  if (!arr) return dflt;
+  const n = arr.length, x = ((((th + Math.PI) / (2 * Math.PI)) * n - 0.5) % n + n) % n, i = Math.floor(x), t = x - i;
+  const p0 = arr[(i + n - 1) % n], p1 = arr[i], p2 = arr[(i + 1) % n], p3 = arr[(i + 2) % n];
+  return 0.5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
 }
 const wrapPi = a => ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 
@@ -325,6 +350,35 @@ function designedSample(shape) {
 // 点の貫く向きに応じて、器の厚みの分の差を数えない距離。
 // 平らな面（上下に貫く）は、平皿の裏の高台の内側まで届くよう 1cm まで許す
 const THRU_V = 1.0;
+
+// ---------- 丸くない器の外形（真上の写真から） ----------
+// f：向きごとの半径の倍率（平均が1）、notch：向きごとの欠けの深さ（平均の半径に対する割合）。角度 -π から5°ずつ72個
+export const PLAN_N = 72;
+export function sanitizePlan(p) {
+  if (!p || typeof p !== 'object' || !Array.isArray(p.f) || !Array.isArray(p.notch)) return null;
+  if (p.f.length !== PLAN_N || p.notch.length !== PLAN_N) return null;
+  const ok = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  if (!p.f.every(v => ok(v, 0.4, 1.8)) || !p.notch.every(v => ok(v, 0, 0.6))) return null;
+  return { f: p.f.slice(), notch: p.notch.slice() };
+}
+// 欠けの数（深さが平均の半径の3%を超えるひと続きの所）
+export function planChipCount(p) {
+  if (!p) return 0;
+  const on = p.notch.map(v => v > 0.03);
+  if (on.every(Boolean)) return 1;
+  let n = 0;
+  on.forEach((v, i) => { if (v && !on[(i + PLAN_N - 1) % PLAN_N]) n++; });
+  return n;
+}
+// いちばん長い所と短い所（中心を通る差し渡し）。半径が R のときの cm
+export function planSpan(p, R) {
+  let L = 0, Wd = Infinity;
+  for (let i = 0; i < PLAN_N / 2; i++) {
+    const d = (p.f[i] + p.f[i + PLAN_N / 2]) * R;
+    L = Math.max(L, d); Wd = Math.min(Wd, d);
+  }
+  return { length: L, width: Wd };
+}
 
 // 欠けの大きさ：0=小・1=中（見本と同じ）・2=大。[幅の倍率, 深さの倍率]
 export const CHIP_SCALE = [[0.6, 0.6], [1, 1], [2.4, 2]];
@@ -497,6 +551,31 @@ function kintsugiMaps(shape, { rowKind, rowR, rowY, S, total }) {
           const px = Math.max((2 * Math.PI * rr) / W, pxV);
           const inside = Math.min(cw - Math.abs(cx), Y - (H - edge));
           const cov = Math.max(0, Math.min(1, 0.5 + inside / px));
+          if (cov > 0) {
+            const o = row * W + cc;
+            if (cov >= 0.5) pImg.data[o * 4] = 4 * 30;
+            cImg.data[o * 4 + 1] = Math.max(cImg.data[o * 4 + 1], Math.round(cov * 255));
+            height[o] = Math.max(height[o], 0.55 * cov);
+            touch(o);
+          }
+        }
+      }
+    }
+    // 真上の写真から取った欠け：外形より内側に入り込んだ所。器の厚み全体が欠けているので、内・外・縁を同じ線で塗る。
+    // 欠けの深さは平均の半径に対する割合なので、その向きの倍率で割って断面の上の長さにする
+    if (shape.plan?.notch) {
+      const R0 = shape.rim / 2, px = Math.max((2 * Math.PI * R0) / W, pxV);
+      for (let cc = 0; cc < W; cc++) {
+        const th = ((cc + 0.5) / W) * 2 * Math.PI, nd = planAt(shape.plan.notch, th, 0);
+        if (nd <= 0.005) continue;
+        const edgeAt = t => R0 * (1 - Math.max(0, planAt(shape.plan.notch, t, 0)) / planAt(shape.plan.f, t, 1));
+        const edge = edgeAt(th), dt = 0.004;
+        // 縁が回転の向きに斜めに走る所は、縁に直角な距離でぼかす（ぎざぎざを防ぐ）
+        const slope = (edgeAt(th + dt) - edgeAt(th - dt)) / (2 * dt * Math.max(edge, 0.3));
+        const k = Math.sqrt(1 + slope * slope);
+        for (let row = 0; row < S; row++) {
+          if (rowKind[row] === 'foot') continue;
+          const cov = Math.max(0, Math.min(1, 0.5 + (rowR[row] - edge) / (px * k)));
           if (cov > 0) {
             const o = row * W + cc;
             if (cov >= 0.5) pImg.data[o * 4] = 4 * 30;

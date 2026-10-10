@@ -63,6 +63,16 @@
         <input type="file" id="photoInput" accept="image/*" hidden>
         <button class="link" id="shapeReset" type="button" hidden>見本の形に戻す</button>
       </div>
+      <div class="plan-row" id="planRow" hidden>
+        <p class="shape-status" id="planStatus">丸い外形</p>
+        <div class="shape-actions">
+          <label class="btn ghost small" for="planInput">真上の写真を選ぶ</label>
+          <input type="file" id="planInput" accept="image/*" hidden>
+          <button class="link" id="planReset" type="button" hidden>丸い外形に戻す</button>
+        </div>
+        <p class="note">楕円や木の葉形など、丸くない器は真上から撮った写真で外形を合わせます。欠けた所も写真から取り込みます。</p>
+        <p class="err" id="planErr" role="alert"></p>
+      </div>
       <p class="tips-title">撮り方のこつ</p>
       <ol class="shoot-tips">
         <li>器の真横から、少しだけ見下ろして撮る</li>
@@ -70,6 +80,7 @@
         <li>スマホを傾けず、まっすぐ構える</li>
         <li>背景は器と違う色にする（白い器なら暗い布、黒い器なら明るい紙）</li>
         <li id="tipBroken" hidden>一部が割れて無い器は、残っている口縁が左右いっぱいに写る向きで撮る</li>
+        <li id="tipPlan" hidden>真上の写真は、器の真上からまっすぐ、器全体が入るように撮る</li>
       </ol>
       <p class="note">写真はこの端末の中だけで使い、どこにも送信しません。</p>
       <p class="err" id="shapeErr" role="alert"></p>
@@ -192,6 +203,29 @@
     <footer class="order-foot">
       <button class="btn ghost" type="button" id="autoBtn">自動で置き直す</button>
       <button class="btn primary" type="button" id="applyShape">この形で3Dを作る</button>
+    </footer>
+  </div>
+</dialog>
+
+<dialog class="photo" id="planDlg" aria-labelledby="planTitle">
+  <div class="photo-inner">
+    <header class="order-head">
+      <h2 id="planTitle">外形を器に合わせる</h2>
+      <button class="close" type="button" onclick="this.closest('dialog').close()" aria-label="閉じる">×</button>
+    </header>
+    <div class="photo-body">
+      <div class="photo-stage" id="planStage"><canvas id="planCanvas"></canvas></div>
+      <div class="photo-side">
+        <p class="note">黄色の線が、3Dにする外形です。ずれている所は、線の上の丸い印をドラッグして器の縁に合わせてください。</p>
+        <p class="note">水色の所は、欠けとして金や漆で埋める所です。欠けで元の形が分からない所は、前後の丸みから補っています。</p>
+        <label class="check-field"><input type="checkbox" id="planChipOn" checked> へこんだ所を欠けにする</label>
+        <p class="note">大きさは、横の写真か器の種類の口径に合わせます。</p>
+        <p class="shape-nums mono" id="planNums"></p>
+      </div>
+    </div>
+    <footer class="order-foot">
+      <button class="btn ghost" type="button" id="planAuto">自動で合わせ直す</button>
+      <button class="btn primary" type="button" id="planApply">この外形で3Dを作る</button>
     </footer>
   </div>
 </dialog>
