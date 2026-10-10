@@ -76,6 +76,7 @@ export class Viewer {
       uCover: { value: null },
       uCoverOn: { value: 0 },
       uSel: { value: -1 },
+      uGemPart: { value: -1 },   // 光を通す材質で別に描く部位（指輪の石）。本体ではこの部位を描かない
       uPulse: { value: 0 },
     };
     await this.loadModel(p);
@@ -149,6 +150,18 @@ export class Viewer {
     this.uniforms.uCover.value = this.coverTex || detailTex;
     this.uniforms.uCoverOn.value = this.coverTex ? 1 : 0;
 
+    // 石は光を通す材質で別に描く（屈折して奥の地金や爪が透けて見える）
+    this.gemMesh = null;
+    this.uniforms.uGemPart.value = -1;
+    if (p.vessel?.gem && p.gemPart != null) {
+      const gm = new THREE.MeshPhysicalMaterial({
+        transmission: 1, thickness: 0.6, ior: 2.1, roughness: 0, metalness: 0,
+        specularIntensity: 1, dispersion: 0.6, attenuationDistance: 0.12, envMapIntensity: 1.6,
+      });
+      this.gemMesh = new THREE.Mesh(p.vessel.gem, gm);
+      gltf.scene.add(this.gemMesh);
+      this.uniforms.uGemPart.value = p.gemPart;
+    }
     const root = this.root = gltf.scene;
     const box = new THREE.Box3().setFromObject(root);
     const s = 2 / box.getSize(new THREE.Vector3()).length();
@@ -197,7 +210,7 @@ uniform vec3 uColors[${MAX_PARTS}]; uniform float uRough[${MAX_PARTS}]; uniform 
 uniform vec3 uUnder[${MAX_PARTS}]; uniform vec3 uAged[${MAX_PARTS}];
 uniform sampler2D uWearMap; uniform float uWearOn; uniform float uAge;
 uniform sampler2D uCover; uniform float uCoverOn;
-uniform float uSel; uniform float uPulse;
+uniform float uSel; uniform float uPulse; uniform float uGemPart;
 vec3 partTop(int i) { return mix(uColors[i], uAged[i], uAge * uWearOn); }`)
         .replace('#include <map_fragment>', `
 vec4 pv = texture2D(uParts, vMapUv);
@@ -210,6 +223,7 @@ if (uCoverOn > 0.5) {
   seamC = cv.r; chipC = cv.g;
 }
 int ipSel = chipC > 0.5 ? 4 : (seamC > 0.5 ? 3 : ip);
+if (uGemPart >= 0.0 && ip == int(uGemPart)) discard;
 float dAmt = mix(mix(uDetailAmt[ip], uDetailAmt[3], seamC), uDetailAmt[4], chipC);
 float pr = mix(mix(uRough[ip], uRough[3], seamC), uRough[4], chipC);
 float pm = mix(mix(uMetal[ip], uMetal[3], seamC), uMetal[4], chipC);
@@ -236,6 +250,12 @@ if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;
   // 部品の色・質感を反映する（look: {roughness ざらつき, detail 質感の強さ, metal 金属らしさ}）
   setPart(index, hex, look) {
     this.uniforms.uColors.value[index].set(hex);
+    if (this.gemMesh && index === this.uniforms.uGemPart.value) {
+      // 透明な石の色：白に近い色（ダイヤ）はほぼ無色、色石は奥へ行くほど色が濃くなる
+      const c = new THREE.Color(hex), m = this.gemMesh.material;
+      m.attenuationColor.copy(c);
+      m.color.copy(c).lerp(new THREE.Color(1, 1, 1), 0.2);
+    }
     if (look) {
       this.uniforms.uRough.value[index] = look.roughness ?? 0.8;
       this.uniforms.uDetailAmt.value[index] = look.detail ?? 1;

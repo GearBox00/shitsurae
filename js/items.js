@@ -154,10 +154,12 @@ function detailCanvas(kinds) {
   return c;
 }
 
-function finish(pieces, kinds, paint) {
+// gems：光を通す材質で別に描く形（指輪の石）。本体の形にも残し、タップで部位を選べるようにする
+function finish(pieces, kinds, paint, gems = null) {
+  const gem = gems?.length ? mergeGeometries(gems.map(g => clean(g.clone())), false) : null;
   const geometry = mergeGeometries(pieces.map(clean), false);
   pieces.forEach(p => p.dispose());
-  return { geometry, parts: partsCanvas(paint), detail: detailCanvas(kinds), normal: null, wear: null, item: true };
+  return { geometry, gem, parts: partsCanvas(paint), detail: detailCanvas(kinds), normal: null, wear: null, item: true };
 }
 
 // ---------- 長傘 ----------
@@ -273,6 +275,7 @@ function brilliant(rg, cx, cy, cz, part) {
   return faceted(tris, part);
 }
 function buildRing({ style = 'solitaire', inner = 8.6, width = 2.4, thick = 1.6, stone = 2.6 } = {}) {
+  const gems = [];
   thick *= Math.sqrt(width / 2.4);                            // 太い指輪は少し厚くする
   const pieces = [];
   // 甲丸（外は丸く、内はほぼ平ら）の断面を、Y軸のまわりに回してから立てる
@@ -296,7 +299,7 @@ function buildRing({ style = 'solitaire', inner = 8.6, width = 2.4, thick = 1.6,
     const g = brilliant(rg, 0, 0, 0, 2);
     // 石の上（+Y）を輪の外向きにそろえる
     g.applyMatrix4(new THREE.Matrix4().makeRotationZ(a - Math.PI / 2)).translate(cx, cy, 0);
-    pieces.push(g);
+    pieces.push(g); gems.push(g);
     if (!withProngs) return;
     // 石座（石の下の輪）と4本の爪
     const seat = new THREE.TorusGeometry(rg * 0.78, rg * 0.12, 8, 24).rotateX(Math.PI / 2).translate(0, -rg * 0.35, 0);
@@ -327,14 +330,14 @@ function buildRing({ style = 'solitaire', inner = 8.6, width = 2.4, thick = 1.6,
       const R = top - rg * 0.15, cx = R * Math.cos(a), cy = R * Math.sin(a);
       const g = brilliant(rg, 0, 0, 0, 2);
       g.applyMatrix4(new THREE.Matrix4().makeRotationZ(a - Math.PI / 2)).translate(cx, cy, 0);
-      pieces.push(g);
+      pieces.push(g); gems.push(g);
     }
     for (const z of [-1, 1]) {
       const rail = new THREE.TorusGeometry(top - 0.1, 0.22, 8, 64, (110 * Math.PI) / 180).rotateZ((35 * Math.PI) / 180).translate(0, 0, z * rg * 1.05);
       pieces.push(ofPart(rail, 3));
     }
   }
-  return finish(pieces, ['hammer', 'hammer', 'smooth', 'fine']);
+  return finish(pieces, ['hammer', 'hammer', 'smooth', 'fine'], null, gems);
 }
 
 // ---------- トートバッグ ----------
