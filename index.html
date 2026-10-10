@@ -94,8 +94,9 @@ const ITEMS = [
   { id: 'shoe', name: 'ランニングスニーカー', cat: '靴', status: 'open', parts: 8, desc: '8つの部位、3種類の素材、かかとの刺しゅうまで選べます。', tone: '#1f2e57' },
   { id: 'kintsugi', name: '金継ぎの器', cat: '工芸', status: 'open', parts: 5, desc: '茶碗・平皿・湯呑み・徳利の4種類。継ぎ目と欠けを金・銀・朱から選び、仕上げの艶と高台の銘まで確かめられます。', tone: '#8a6a24' },
   { id: 'urushi', name: '漆のお椀', cat: '工芸', status: 'open', parts: 4, desc: '外・内・縁・高台を塗り分け、10年・20年と使い込んだ姿まで確かめられます。形は写真1枚から作りました。', tone: '#7a2a1c' },
-  { id: 'umbrella', name: '長傘', cat: '雑貨', status: 'soon', parts: 4, desc: '生地の色と柄、持ち手の素材を選び、開いた姿で確かめられます。', tone: '#4f6b3a' },
-  { id: 'tote', name: 'トートバッグ', cat: '雑貨', status: 'soon', parts: 5, desc: '本体・持ち手・底布の色と、名入れの位置を選べます。', tone: '#b98a5a' },
+  { id: 'umbrella', name: '長傘', cat: '雑貨', status: 'open', parts: 5, desc: '8・12・16本骨から選び、生地を1枚おきに塗り分け。骨・手元の素材まで、開いた姿で確かめられます。', tone: '#4f6b3a' },
+  { id: 'ring', name: '指輪', cat: 'アクセサリー', status: 'open', parts: 4, desc: '一粒石・三つ石・ハーフエタニティ。地金と石、鏡面や槌目の仕上げを選び、内側の刻印まで確かめられます。', tone: '#9a7b3c' },
+  { id: 'tote', name: 'トートバッグ', cat: '雑貨', status: 'open', parts: 6, desc: '3つの大きさから選び、本体・底布・持ち手・ポケットを塗り分け。ポケットの名入れまで確かめられます。', tone: '#b98a5a' },
   { id: 'chair', name: 'ダイニングチェア', cat: '家具', status: 'soon', parts: 3, desc: '木の色と座面の張り地を組み合わせて選べます。', tone: '#5b3a5e' },
 ];
 const CATS = ['すべて', ...new Set(ITEMS.map(i => i.cat))];

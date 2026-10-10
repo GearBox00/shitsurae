@@ -50,7 +50,7 @@ export class Viewer {
     scene.add(key);
 
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
-    this.camera.position.set(...p.views.side);
+    this.camera.position.set(...p.views[p.initialView || 'side']);
     const controls = this.controls = new OrbitControls(this.camera, renderer.domElement);
     controls.enableDamping = true;
     controls.enablePan = false;
@@ -99,6 +99,7 @@ export class Viewer {
       partsImg = { data: pc.getImageData(0, 0, v.parts.width, v.parts.height).data, width: v.parts.width, height: v.parts.height };
       partsTex = new THREE.CanvasTexture(v.parts);
       detailTex = new THREE.CanvasTexture(v.detail);
+      detailTex.wrapS = THREE.RepeatWrapping;   // 傘・指輪・バッグは質感を横にくり返して貼る（器は u が0〜1なので影響しない）
       wearTex = v.wear ? new THREE.CanvasTexture(v.wear) : null;
       this.coverTex = v.cover ? new THREE.CanvasTexture(v.cover) : null;
       normalTex = v.normal ? new THREE.CanvasTexture(v.normal) : null;
@@ -393,7 +394,7 @@ if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;
 
   // ---- 文字入れ（デカール＝シールのように表面へ貼る） ----
   // facing を渡すと、その向きから見える面だけを使う（内側や裏の面を除く）
-  findPartSurface(index, facing) {
+  findPartSurface(index, facing, up = null) {
     const geo = this.mesh.geometry;
     const pos = geo.attributes.position, uv = geo.attributes.uv, nor = geo.attributes.normal;
     const idx = geo.index;
@@ -420,6 +421,8 @@ if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;
     const normal = nsum.normalize();
     // 部品の広がり（貼る面の幅と高さ）を測る
     const helper = new THREE.Object3D();
+    // 貼る面が真上・真下を向くときは「上」が決まらないので、設定の up（指輪なら輪の厚みの向き）を使う
+    if (up) helper.up.copy(up);
     helper.position.copy(center); helper.lookAt(center.clone().add(normal)); helper.updateMatrixWorld();
     const inv = helper.matrixWorld.clone().invert();
     const b = new THREE.Box3();
@@ -436,7 +439,7 @@ if (ipSel == int(uSel)) totalEmissiveRadiance += vec3(0.95, 0.72, 0.2) * uPulse;
     if (!value) return;
     const part = this.product.parts.find(p => p.id === textCfg.part);
     const facing = textCfg.facing ? new THREE.Vector3(...this.product.views[textCfg.facing]).normalize() : null;
-    this.textSurface ||= this.findPartSurface(part.index, facing);
+    this.textSurface ||= this.findPartSurface(part.index, facing, textCfg.up ? new THREE.Vector3(...textCfg.up) : null);
     const s = this.textSurface;
     if (!s) return;
     await document.fonts.load(fontCss, value).catch(() => {});

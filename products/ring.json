@@ -1,0 +1,391 @@
+{
+  "id": "ring",
+  "name": "指輪",
+  "category": "アクセサリー",
+  "build": "ring",
+  "basePrice": 38000,
+  "priceLabel": "指輪（一粒石）",
+  "partsMapScale": 30,
+  "shadow": [
+    1.6,
+    1.0
+  ],
+  "credit": "指輪の3Dモデル: GearBox がプログラムで作成",
+  "materialLabel": "仕上げ",
+  "defaultMaterial": "mirror",
+  "palettes": {
+    "metal": [
+      {
+        "id": "sv",
+        "name": "シルバー925",
+        "hex": "#cfd2d5",
+        "metal": 1
+      },
+      {
+        "id": "k18yg",
+        "name": "K18 イエローゴールド",
+        "hex": "#e6c06a",
+        "metal": 1,
+        "price": 45000
+      },
+      {
+        "id": "k18pg",
+        "name": "K18 ピンクゴールド",
+        "hex": "#e8b19c",
+        "metal": 1,
+        "price": 45000
+      },
+      {
+        "id": "k18wg",
+        "name": "K18 ホワイトゴールド",
+        "hex": "#dedcd4",
+        "metal": 1,
+        "price": 45000
+      },
+      {
+        "id": "pt",
+        "name": "プラチナ950",
+        "hex": "#e4e5e6",
+        "metal": 1,
+        "price": 55000
+      }
+    ],
+    "inner": [
+      {
+        "id": "sv",
+        "name": "シルバー925",
+        "hex": "#cfd2d5",
+        "metal": 1
+      },
+      {
+        "id": "k18yg",
+        "name": "K18 イエローゴールド",
+        "hex": "#e6c06a",
+        "metal": 1
+      },
+      {
+        "id": "k18pg",
+        "name": "K18 ピンクゴールド",
+        "hex": "#e8b19c",
+        "metal": 1
+      },
+      {
+        "id": "k18wg",
+        "name": "K18 ホワイトゴールド",
+        "hex": "#dedcd4",
+        "metal": 1
+      },
+      {
+        "id": "pt",
+        "name": "プラチナ950",
+        "hex": "#e4e5e6",
+        "metal": 1
+      }
+    ],
+    "stone": [
+      {
+        "id": "diamond",
+        "name": "ダイヤモンド",
+        "hex": "#f3f7ff",
+        "metal": 0.55
+      },
+      {
+        "id": "ruby",
+        "name": "ルビー",
+        "hex": "#b3122e",
+        "metal": 0.45
+      },
+      {
+        "id": "sapphire",
+        "name": "サファイア",
+        "hex": "#1f3fa6",
+        "metal": 0.45
+      },
+      {
+        "id": "emerald",
+        "name": "エメラルド",
+        "hex": "#16805a",
+        "metal": 0.45
+      },
+      {
+        "id": "amethyst",
+        "name": "アメジスト",
+        "hex": "#7b4bb0",
+        "metal": 0.45
+      },
+      {
+        "id": "pinkdia",
+        "name": "ピンクダイヤモンド",
+        "hex": "#f2b6c8",
+        "metal": 0.5,
+        "price": 20000
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "band",
+      "name": "地金",
+      "index": 0,
+      "palette": "metal",
+      "default": "pt",
+      "materials": [
+        "mirror",
+        "matte",
+        "hammer"
+      ]
+    },
+    {
+      "id": "inner",
+      "name": "内側",
+      "index": 1,
+      "palette": "inner",
+      "default": "pt",
+      "look": {
+        "roughness": 0.12,
+        "detail": 0
+      }
+    },
+    {
+      "id": "stone",
+      "name": "石",
+      "index": 2,
+      "palette": "stone",
+      "default": "diamond",
+      "look": {
+        "roughness": 0.02,
+        "detail": 0
+      }
+    },
+    {
+      "id": "prong",
+      "name": "爪と石座",
+      "index": 3,
+      "palette": "inner",
+      "default": "pt",
+      "look": {
+        "roughness": 0.15,
+        "detail": 0
+      }
+    }
+  ],
+  "materials": {
+    "mirror": {
+      "name": "鏡面",
+      "price": 0,
+      "roughness": 0.1,
+      "detail": 0
+    },
+    "matte": {
+      "name": "つや消し",
+      "price": 2000,
+      "roughness": 0.45,
+      "detail": 0.15
+    },
+    "hammer": {
+      "name": "槌目",
+      "price": 5000,
+      "roughness": 0.16,
+      "detail": 1
+    }
+  },
+  "variantLabel": "デザイン",
+  "defaultVariant": "solitaire",
+  "variants": [
+    {
+      "id": "solitaire",
+      "name": "一粒石",
+      "size": "石 約0.3ct",
+      "basePrice": 38000,
+      "priceLabel": "指輪（一粒石）",
+      "icon": "M20 9 L24 5 L16 5 Z M20 10 A11 11 0 1 0 20.1 10 M20 14 A7.5 7.5 0 1 1 19.9 14",
+      "buildOpts": {
+        "style": "solitaire"
+      }
+    },
+    {
+      "id": "trilogy",
+      "name": "三つ石",
+      "size": "中石 約0.25ct",
+      "basePrice": 52000,
+      "priceLabel": "指輪（三つ石）",
+      "icon": "M14 8 L17 5 L11 5 Z M20 8 L23 4 L17 4 Z M26 8 L29 5 L23 5 Z M20 10 A11 11 0 1 0 20.1 10",
+      "buildOpts": {
+        "style": "trilogy"
+      }
+    },
+    {
+      "id": "eternity",
+      "name": "ハーフエタニティ",
+      "size": "小石11石",
+      "basePrice": 68000,
+      "priceLabel": "指輪（ハーフエタニティ）",
+      "icon": "M20 9 A11 11 0 1 0 20.1 9 M10 14 h2 M14 10 h2 M20 9 h1 M24 10 h2 M28 14 h2",
+      "buildOpts": {
+        "style": "eternity"
+      }
+    }
+  ],
+  "text": {
+    "part": "inner",
+    "facing": "top",
+    "label": "内側の刻印",
+    "placeholder": "例: 2026.10.10 K&S",
+    "maxLength": 16,
+    "price": 3000,
+    "depth": 0.56,
+    "fonts": [
+      {
+        "id": "roman",
+        "name": "ローマン",
+        "css": "600 120px 'Shippori Mincho', serif"
+      },
+      {
+        "id": "script",
+        "name": "筆記体",
+        "css": "400 130px 'Caveat', cursive"
+      }
+    ],
+    "colorLabel": "刻印の色",
+    "colors": [
+      {
+        "hex": "#55524d",
+        "name": "墨入れ"
+      },
+      {
+        "hex": "#bfc1c3",
+        "name": "地金の色",
+        "metal": 1
+      }
+    ],
+    "up": [
+      0,
+      0,
+      -1
+    ]
+  },
+  "sizeLabel": "号数",
+  "sizeUnit": "号",
+  "sizes": [
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20"
+  ],
+  "orderNote": "職人が1点ずつ仕立てるため、お届けまで約4週間かかります（デモの仮の値です）。",
+  "presets": [
+    {
+      "name": "プラチナにダイヤ",
+      "colors": {
+        "band": "pt",
+        "inner": "pt",
+        "stone": "diamond",
+        "prong": "pt"
+      },
+      "material": "mirror"
+    },
+    {
+      "name": "ピンクゴールドに桃色",
+      "colors": {
+        "band": "k18pg",
+        "inner": "k18pg",
+        "stone": "pinkdia",
+        "prong": "k18pg"
+      },
+      "material": "mirror"
+    },
+    {
+      "name": "槌目の金にルビー",
+      "colors": {
+        "band": "k18yg",
+        "inner": "k18yg",
+        "stone": "ruby",
+        "prong": "k18yg"
+      },
+      "material": "hammer"
+    },
+    {
+      "name": "つや消し銀に青",
+      "colors": {
+        "band": "sv",
+        "inner": "sv",
+        "stone": "sapphire",
+        "prong": "sv"
+      },
+      "material": "matte"
+    }
+  ],
+  "presetDots": [
+    "band",
+    "stone",
+    "inner",
+    "prong"
+  ],
+  "viewButtons": [
+    {
+      "id": "front",
+      "label": "正面"
+    },
+    {
+      "id": "naname",
+      "label": "斜め"
+    },
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "top",
+      "label": "石"
+    },
+    {
+      "id": "inside",
+      "label": "内側"
+    }
+  ],
+  "snapshotViews": [
+    "naname",
+    "front",
+    "top"
+  ],
+  "views": {
+    "front": [
+      0.0,
+      0.35,
+      3.4
+    ],
+    "naname": [
+      2.1,
+      1.5,
+      2.3
+    ],
+    "side": [
+      3.4,
+      0.4,
+      0.01
+    ],
+    "top": [
+      0.0,
+      3.4,
+      0.6
+    ],
+    "inside": [
+      0.0,
+      1.9,
+      2.6
+    ]
+  },
+  "initialView": "naname"
+}

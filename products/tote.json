@@ -1,0 +1,422 @@
+{
+  "id": "tote",
+  "name": "トートバッグ",
+  "category": "雑貨",
+  "build": "tote",
+  "basePrice": 6800,
+  "priceLabel": "トートバッグ（A4）",
+  "partsMapScale": 30,
+  "shadow": [
+    2.0,
+    1.2
+  ],
+  "credit": "トートバッグの3Dモデル: GearBox がプログラムで作成",
+  "materialLabel": "生地",
+  "defaultMaterial": "hanpu",
+  "palettes": {
+    "canvas": [
+      {
+        "id": "kinari",
+        "name": "生成り",
+        "hex": "#e9e1cf"
+      },
+      {
+        "id": "sumi",
+        "name": "墨黒",
+        "hex": "#2b2a28"
+      },
+      {
+        "id": "kon",
+        "name": "紺",
+        "hex": "#26325a"
+      },
+      {
+        "id": "olive",
+        "name": "オリーブ",
+        "hex": "#6b6a3e"
+      },
+      {
+        "id": "karashi",
+        "name": "からし",
+        "hex": "#c9a23a"
+      },
+      {
+        "id": "enji",
+        "name": "えんじ",
+        "hex": "#7a2830"
+      },
+      {
+        "id": "gray",
+        "name": "杢グレー",
+        "hex": "#9a9893"
+      },
+      {
+        "id": "mizu",
+        "name": "水色",
+        "hex": "#9ec3d6"
+      }
+    ],
+    "handle": [
+      {
+        "id": "kinari",
+        "name": "生成り",
+        "hex": "#e9e1cf"
+      },
+      {
+        "id": "sumi",
+        "name": "墨黒",
+        "hex": "#2b2a28"
+      },
+      {
+        "id": "kon",
+        "name": "紺",
+        "hex": "#26325a"
+      },
+      {
+        "id": "olive",
+        "name": "オリーブ",
+        "hex": "#6b6a3e"
+      },
+      {
+        "id": "karashi",
+        "name": "からし",
+        "hex": "#c9a23a"
+      },
+      {
+        "id": "enji",
+        "name": "えんじ",
+        "hex": "#7a2830"
+      },
+      {
+        "id": "gray",
+        "name": "杢グレー",
+        "hex": "#9a9893"
+      },
+      {
+        "id": "mizu",
+        "name": "水色",
+        "hex": "#9ec3d6"
+      },
+      {
+        "id": "nume",
+        "name": "本革（ヌメ）",
+        "hex": "#c8945e",
+        "price": 2500,
+        "roughMul": 0.6
+      },
+      {
+        "id": "leather_black",
+        "name": "本革（黒）",
+        "hex": "#221d1a",
+        "price": 2500,
+        "roughMul": 0.6
+      },
+      {
+        "id": "leather_brown",
+        "name": "本革（こげ茶）",
+        "hex": "#5a3a24",
+        "price": 2500,
+        "roughMul": 0.6
+      }
+    ]
+  },
+  "customColor": {
+    "price": 500,
+    "label": "好きな色（1色ごと）"
+  },
+  "parts": [
+    {
+      "id": "body",
+      "name": "本体",
+      "index": 0,
+      "palette": "canvas",
+      "default": "kinari",
+      "materials": [
+        "hanpu",
+        "denim",
+        "nylon"
+      ]
+    },
+    {
+      "id": "bottom",
+      "name": "底布",
+      "index": 1,
+      "palette": "canvas",
+      "default": "kon",
+      "materials": [
+        "hanpu",
+        "denim",
+        "nylon"
+      ]
+    },
+    {
+      "id": "handle",
+      "name": "持ち手",
+      "index": 2,
+      "palette": "handle",
+      "default": "kon",
+      "look": {
+        "roughness": 0.85,
+        "detail": 0.9
+      }
+    },
+    {
+      "id": "pocket",
+      "name": "ポケット",
+      "index": 3,
+      "palette": "canvas",
+      "default": "kinari",
+      "materials": [
+        "hanpu",
+        "denim",
+        "nylon"
+      ]
+    },
+    {
+      "id": "lining",
+      "name": "内布",
+      "index": 4,
+      "palette": "canvas",
+      "default": "kinari",
+      "look": {
+        "roughness": 0.9,
+        "detail": 0.4
+      }
+    },
+    {
+      "id": "binding",
+      "name": "口の縁",
+      "index": 5,
+      "palette": "canvas",
+      "default": "kon",
+      "look": {
+        "roughness": 0.9,
+        "detail": 1
+      }
+    }
+  ],
+  "materials": {
+    "hanpu": {
+      "name": "帆布（8号）",
+      "price": 0,
+      "roughness": 0.95,
+      "detail": 1
+    },
+    "denim": {
+      "name": "デニム",
+      "price": 1500,
+      "roughness": 0.9,
+      "detail": 0.8
+    },
+    "nylon": {
+      "name": "ナイロン（はっ水）",
+      "price": 0,
+      "roughness": 0.5,
+      "detail": 0.25
+    }
+  },
+  "variantLabel": "大きさ",
+  "defaultVariant": "a4",
+  "variants": [
+    {
+      "id": "s",
+      "name": "小さめ",
+      "size": "幅28×高さ26×まち10cm",
+      "basePrice": 4800,
+      "priceLabel": "トートバッグ（小さめ）",
+      "icon": "M10 16 H30 V34 H10 Z M15 16 Q20 6 25 16",
+      "buildOpts": {
+        "w": 28,
+        "h": 26,
+        "d": 10,
+        "band": 7
+      }
+    },
+    {
+      "id": "a4",
+      "name": "A4",
+      "size": "幅36×高さ38×まち12cm",
+      "basePrice": 6800,
+      "priceLabel": "トートバッグ（A4）",
+      "icon": "M9 13 H31 V36 H9 Z M14 13 Q20 3 26 13",
+      "buildOpts": {
+        "w": 36,
+        "h": 38,
+        "d": 12,
+        "band": 9
+      }
+    },
+    {
+      "id": "l",
+      "name": "大きめ",
+      "size": "幅44×高さ40×まち16cm",
+      "basePrice": 8800,
+      "priceLabel": "トートバッグ（大きめ）",
+      "icon": "M6 14 H34 V36 H6 Z M13 14 Q20 3 27 14",
+      "buildOpts": {
+        "w": 44,
+        "h": 40,
+        "d": 16,
+        "band": 10
+      }
+    }
+  ],
+  "text": {
+    "part": "pocket",
+    "facing": "front",
+    "label": "ポケットに名入れ（プリント）",
+    "placeholder": "例: SHITSURAE",
+    "maxLength": 10,
+    "price": 800,
+    "fonts": [
+      {
+        "id": "gothic",
+        "name": "ゴシック",
+        "css": "700 120px 'Zen Kaku Gothic New', sans-serif"
+      },
+      {
+        "id": "script",
+        "name": "筆記体",
+        "css": "400 130px 'Caveat', cursive"
+      }
+    ],
+    "colorLabel": "文字の色",
+    "colors": [
+      {
+        "hex": "#f2f0ea",
+        "name": "白"
+      },
+      {
+        "hex": "#222222",
+        "name": "黒"
+      },
+      {
+        "hex": "#26325a",
+        "name": "紺"
+      },
+      {
+        "hex": "#c9a24a",
+        "name": "金の箔",
+        "metal": 1
+      }
+    ]
+  },
+  "sizeLabel": "持ち手の長さ",
+  "sizeUnit": "",
+  "sizes": [
+    "手持ち（40cm）",
+    "肩掛け（55cm）"
+  ],
+  "orderNote": "1点ずつ縫製するため、お届けまで約2週間かかります（デモの仮の値です）。",
+  "presets": [
+    {
+      "name": "生成りと紺",
+      "colors": {
+        "body": "kinari",
+        "bottom": "kon",
+        "handle": "kon",
+        "pocket": "kinari",
+        "lining": "kinari",
+        "binding": "kon"
+      },
+      "material": "hanpu"
+    },
+    {
+      "name": "墨黒に革",
+      "colors": {
+        "body": "sumi",
+        "bottom": "sumi",
+        "handle": "nume",
+        "pocket": "sumi",
+        "lining": "gray",
+        "binding": "sumi"
+      },
+      "material": "hanpu"
+    },
+    {
+      "name": "オリーブとからし",
+      "colors": {
+        "body": "olive",
+        "bottom": "karashi",
+        "handle": "olive",
+        "pocket": "karashi",
+        "lining": "kinari",
+        "binding": "karashi"
+      },
+      "material": "hanpu"
+    },
+    {
+      "name": "デニムにえんじ",
+      "colors": {
+        "body": "kon",
+        "bottom": "kon",
+        "handle": "leather_brown",
+        "pocket": "enji",
+        "lining": "enji",
+        "binding": "enji"
+      },
+      "material": "denim"
+    }
+  ],
+  "presetDots": [
+    "body",
+    "bottom",
+    "handle",
+    "pocket"
+  ],
+  "viewButtons": [
+    {
+      "id": "front",
+      "label": "前"
+    },
+    {
+      "id": "naname",
+      "label": "斜め"
+    },
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "back",
+      "label": "後ろ"
+    },
+    {
+      "id": "top",
+      "label": "中"
+    }
+  ],
+  "snapshotViews": [
+    "front",
+    "naname",
+    "top"
+  ],
+  "views": {
+    "front": [
+      0.0,
+      0.45,
+      3.6
+    ],
+    "naname": [
+      2.3,
+      1.3,
+      2.6
+    ],
+    "side": [
+      3.6,
+      0.45,
+      0.01
+    ],
+    "back": [
+      0.0,
+      0.45,
+      -3.6
+    ],
+    "top": [
+      0.0,
+      3.6,
+      0.9
+    ]
+  },
+  "initialView": "naname"
+}

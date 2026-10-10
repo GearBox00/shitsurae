@@ -1,0 +1,357 @@
+{
+  "id": "umbrella",
+  "name": "長傘",
+  "category": "雑貨",
+  "build": "umbrella",
+  "basePrice": 12800,
+  "priceLabel": "長傘（12本骨）",
+  "partsMapScale": 30,
+  "shadow": [
+    2.0,
+    2.0
+  ],
+  "credit": "傘の3Dモデル: GearBox がプログラムで作成",
+  "materialLabel": "生地",
+  "defaultMaterial": "poly",
+  "palettes": {
+    "fabric": [
+      {
+        "id": "sumi",
+        "name": "墨",
+        "hex": "#2a2b2e"
+      },
+      {
+        "id": "kinari",
+        "name": "生成り",
+        "hex": "#ebe4d3"
+      },
+      {
+        "id": "kon",
+        "name": "紺",
+        "hex": "#1f2e57"
+      },
+      {
+        "id": "sora",
+        "name": "空",
+        "hex": "#8fb4d6"
+      },
+      {
+        "id": "wakatake",
+        "name": "若竹",
+        "hex": "#4f7a4a"
+      },
+      {
+        "id": "shu",
+        "name": "朱",
+        "hex": "#b8342a"
+      },
+      {
+        "id": "yamabuki",
+        "name": "山吹",
+        "hex": "#d9a52b"
+      },
+      {
+        "id": "fuji",
+        "name": "藤",
+        "hex": "#8a7bb0"
+      },
+      {
+        "id": "sakura",
+        "name": "桜",
+        "hex": "#e3b5b8"
+      },
+      {
+        "id": "nezumi",
+        "name": "鼠",
+        "hex": "#8b8d8f"
+      }
+    ],
+    "metal": [
+      {
+        "id": "black",
+        "name": "ブラック",
+        "hex": "#2a2a2c",
+        "metal": 0.6
+      },
+      {
+        "id": "silver",
+        "name": "シルバー",
+        "hex": "#c9ccd0",
+        "metal": 1
+      },
+      {
+        "id": "gunmetal",
+        "name": "ガンメタル",
+        "hex": "#5b5d62",
+        "metal": 1
+      },
+      {
+        "id": "gold",
+        "name": "ゴールド",
+        "hex": "#cfa959",
+        "metal": 1,
+        "price": 1000
+      }
+    ],
+    "wood": [
+      {
+        "id": "kaede",
+        "name": "楓",
+        "hex": "#d8b989"
+      },
+      {
+        "id": "kurumi",
+        "name": "胡桃",
+        "hex": "#6b4a2e"
+      },
+      {
+        "id": "kokutan",
+        "name": "黒檀",
+        "hex": "#2a2220",
+        "price": 1500
+      },
+      {
+        "id": "take",
+        "name": "竹",
+        "hex": "#c9b46a",
+        "price": 2000
+      },
+      {
+        "id": "sakuragawa",
+        "name": "桜皮巻き",
+        "hex": "#5a2e24",
+        "price": 3000
+      }
+    ]
+  },
+  "parts": [
+    {
+      "id": "canopyA",
+      "name": "生地（1枚おき・A）",
+      "index": 0,
+      "palette": "fabric",
+      "default": "kon",
+      "materials": [
+        "poly",
+        "cotton",
+        "satin"
+      ]
+    },
+    {
+      "id": "canopyB",
+      "name": "生地（1枚おき・B）",
+      "index": 1,
+      "palette": "fabric",
+      "default": "kon",
+      "materials": [
+        "poly",
+        "cotton",
+        "satin"
+      ]
+    },
+    {
+      "id": "frame",
+      "name": "骨と中棒",
+      "index": 2,
+      "palette": "metal",
+      "default": "black",
+      "look": {
+        "roughness": 0.35,
+        "detail": 0.3
+      }
+    },
+    {
+      "id": "handle",
+      "name": "手元",
+      "index": 3,
+      "palette": "wood",
+      "default": "kurumi",
+      "look": {
+        "roughness": 0.45,
+        "detail": 1
+      }
+    },
+    {
+      "id": "tip",
+      "name": "石突と露先",
+      "index": 4,
+      "palette": "metal",
+      "default": "silver",
+      "look": {
+        "roughness": 0.3,
+        "detail": 0.3
+      }
+    }
+  ],
+  "materials": {
+    "poly": {
+      "name": "ポリエステル（はっ水）",
+      "price": 0,
+      "roughness": 0.72,
+      "detail": 0.6
+    },
+    "cotton": {
+      "name": "綿（つやなし）",
+      "price": 2000,
+      "roughness": 0.97,
+      "detail": 1
+    },
+    "satin": {
+      "name": "サテン（光沢）",
+      "price": 1500,
+      "roughness": 0.38,
+      "detail": 0.25
+    }
+  },
+  "variantLabel": "骨の数",
+  "defaultVariant": "rib12",
+  "variants": [
+    {
+      "id": "rib8",
+      "name": "8本骨",
+      "size": "親骨60cm",
+      "basePrice": 9800,
+      "priceLabel": "長傘（8本骨）",
+      "icon": "M4 22 Q20 2 36 22 Z M20 22 V34 Q20 37 23 37",
+      "buildOpts": {
+        "ribs": 8
+      }
+    },
+    {
+      "id": "rib12",
+      "name": "12本骨",
+      "size": "親骨60cm",
+      "basePrice": 12800,
+      "priceLabel": "長傘（12本骨）",
+      "icon": "M4 22 Q20 2 36 22 Z M20 22 V34 Q20 37 23 37",
+      "buildOpts": {
+        "ribs": 12
+      }
+    },
+    {
+      "id": "rib16",
+      "name": "16本骨",
+      "size": "親骨60cm",
+      "basePrice": 16800,
+      "priceLabel": "長傘（16本骨）",
+      "icon": "M4 22 Q20 2 36 22 Z M20 22 V34 Q20 37 23 37",
+      "buildOpts": {
+        "ribs": 16
+      }
+    }
+  ],
+  "sizeLabel": "親骨の長さ",
+  "sizeUnit": "",
+  "sizes": [
+    "55cm（小さめ）",
+    "60cm（ふつう）",
+    "65cm（大きめ）"
+  ],
+  "orderNote": "生地の裁断から1本ずつ張り上げるため、お届けまで約3週間かかります（デモの仮の値です）。",
+  "presets": [
+    {
+      "name": "紺一色",
+      "colors": {
+        "canopyA": "kon",
+        "canopyB": "kon",
+        "frame": "black",
+        "handle": "kurumi",
+        "tip": "silver"
+      },
+      "material": "poly"
+    },
+    {
+      "name": "紺と生成り",
+      "colors": {
+        "canopyA": "kon",
+        "canopyB": "kinari",
+        "frame": "black",
+        "handle": "kaede",
+        "tip": "silver"
+      },
+      "material": "poly"
+    },
+    {
+      "name": "朱と山吹",
+      "colors": {
+        "canopyA": "shu",
+        "canopyB": "yamabuki",
+        "frame": "gold",
+        "handle": "take",
+        "tip": "gold"
+      },
+      "material": "satin"
+    },
+    {
+      "name": "墨と桜皮",
+      "colors": {
+        "canopyA": "sumi",
+        "canopyB": "sumi",
+        "frame": "gunmetal",
+        "handle": "sakuragawa",
+        "tip": "gunmetal"
+      },
+      "material": "cotton"
+    }
+  ],
+  "presetDots": [
+    "canopyA",
+    "canopyB",
+    "handle",
+    "frame"
+  ],
+  "viewButtons": [
+    {
+      "id": "side",
+      "label": "横"
+    },
+    {
+      "id": "top",
+      "label": "上"
+    },
+    {
+      "id": "under",
+      "label": "内側"
+    },
+    {
+      "id": "naname",
+      "label": "斜め"
+    },
+    {
+      "id": "grip",
+      "label": "手元"
+    }
+  ],
+  "snapshotViews": [
+    "side",
+    "top",
+    "under"
+  ],
+  "views": {
+    "side": [
+      0.0,
+      0.7,
+      3.6
+    ],
+    "top": [
+      0.0,
+      3.6,
+      0.8
+    ],
+    "under": [
+      0.4,
+      -2.6,
+      2.2
+    ],
+    "naname": [
+      2.4,
+      1.8,
+      2.4
+    ],
+    "grip": [
+      1.6,
+      -1.3,
+      2.4
+    ]
+  }
+}

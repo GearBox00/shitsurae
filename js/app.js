@@ -4,6 +4,7 @@ import { store, yen, newOrderNo, safeImg } from './store.js';
 import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, floorOf, CHIP_SCALE, chipOf, sanitizePlan, planChipCount, planSpan } from './vessel.js';
 import { openPhotoShape } from './photo-shape.js';
 import { openPlanShape } from './plan-shape.js';
+import { buildItem } from './items.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -89,6 +90,8 @@ function textCfg() {
 }
 function effModel() {
   const E = eff();
+  // 傘・指輪・トートバッグは、設定の build（と器の種類ごとの buildOpts）から形を組み立てる
+  if (P.build) { E.vessel = buildItem(P.build, { ...(P.buildOpts || {}), ...(variantOf()?.buildOpts || {}) }); return E; }
   if (shapeOf()) { E.vessel = buildVessel({ ...shapeOf(), plan: state.plan || null }, { mode: P.vesselMode || 'lacquer' }); E.text = textCfg(); }
   return E;
 }
@@ -218,7 +221,7 @@ async function syncModel() {
   renderDefects();
   $('loading').hidden = true;
   renderViews();
-  viewer.view('side');
+  viewer.view(P.initialView || 'side');   // 最初の向き（指輪やバッグは斜めからのほうが形が分かる）
   if (modelKey() !== want) return syncModel();
 }
 
