@@ -851,8 +851,10 @@ async function main() {
     });
   }));
   $('shareBtn').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(location.href); toast('このデザインのリンクをコピーしました'); }
-    catch { prompt('このリンクをコピーしてください', location.href); }
+    // 商品ごとの入口のページ（s/<id>.html）を通すと、LINE や SNS に貼ったとき商品の画像とタイトルが出る
+    const link = new URL(`s/${productId}.html`, location.href).href + location.hash;
+    try { await navigator.clipboard.writeText(link); toast('このデザインのリンクをコピーしました'); }
+    catch { prompt('このリンクをコピーしてください', link); }
   });
   $('saveBtn').addEventListener('click', () => {
     const n = store.saved(productId).length + 1;
