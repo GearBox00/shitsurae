@@ -126,6 +126,18 @@ body.sim { height: 100dvh; display: flex; flex-direction: column; overflow: hidd
 body.editing .stage-hint, body.editing .views { opacity: .35; }
 
 .photo { width: min(1000px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+/* AR */
+.ar-btn {
+  position: absolute; top: 12px; right: 12px; z-index: 2; border: 0; border-radius: 999px; padding: 0 16px; min-height: 40px;
+  background: var(--chalk); color: var(--chalk-ink); font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.25);
+}
+.ar-btn[hidden] { display: none; }
+body.editing .ar-btn { display: none; }
+.ar-body { padding: 14px 22px 20px; overflow-y: auto; }
+.ar-stage { height: min(60dvh, 560px); background: var(--paper-2); border-radius: 10px; overflow: hidden; }
+.ar-stage model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+.ar-go { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); }
+#arStatus { margin-top: 10px; color: var(--ink); font-weight: 700; }
 .photo-inner { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); }
 .photo-body { display: grid; grid-template-columns: 1fr 260px; gap: 18px; padding: 16px 22px; overflow-y: auto; }
 .photo-stage { min-width: 0; display: flex; justify-content: center; background: var(--paper-2); border-radius: 10px; }

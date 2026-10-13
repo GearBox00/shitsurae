@@ -3304,5 +3304,6 @@
     "perCrack": 3000,
     "perChip": 2000,
     "perLargeChip": 3000
-  }
-}
+  },
+  "arScale": 0.01
+}

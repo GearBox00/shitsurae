@@ -314,5 +314,6 @@
     "a": 4.073,
     "p": 2.367
   },
-  "defaultShapeLabel": "見本の形（写真から作成）"
+  "defaultShapeLabel": "見本の形（写真から作成）",
+  "arScale": 0.01
 }

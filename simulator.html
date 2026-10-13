@@ -43,6 +43,7 @@
       <p class="edit-hint" id="editHint"></p>
       <button type="button" class="edit-done" id="editDone">完了</button>
     </div>
+    <button type="button" class="ar-btn" id="arBtn">ARで置いてみる</button>
     <div class="history" role="group" aria-label="操作の取り消し">
       <button type="button" id="undoBtn" aria-label="ひとつ戻す" title="ひとつ戻す">↶</button>
       <button type="button" id="redoBtn" aria-label="やり直す" title="やり直す">↷</button>
@@ -234,6 +235,20 @@
       <button class="btn ghost" type="button" id="planAuto">自動で合わせ直す</button>
       <button class="btn primary" type="button" id="planApply">この外形で3Dを作る</button>
     </footer>
+  </div>
+</dialog>
+
+<dialog class="photo ar-dlg" id="arDlg" aria-labelledby="arTitle">
+  <div class="photo-inner">
+    <header class="order-head">
+      <h2 id="arTitle">ARで部屋に置いてみる</h2>
+      <button class="close" type="button" onclick="this.closest('dialog').close()" aria-label="閉じる">×</button>
+    </header>
+    <div class="ar-body">
+      <div class="ar-stage" id="arStage"></div>
+      <p class="note" id="arStatus" role="status"></p>
+      <p class="note">選んだ配色のまま、実物の大きさで表示します。ARのファイルはこの端末の中で作り、どこにも送信しません。</p>
+    </div>
   </div>
 </dialog>
 

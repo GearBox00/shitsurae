@@ -21,6 +21,7 @@
 1. 注文と受注一覧は、開いた端末のブラウザの中にだけ記録されます。どこにも送信されません
 2. 価格や仕上げの名前は、デモ用の仮の値です
 3. 「写真から器の形を作る」で選んだ写真は、ブラウザの中だけで使います。どこにも送信しません
+4. 「ARで置いてみる」のファイルは、ブラウザの中で作ります。どこにも送信しません
 
 ## 使っている素材
 
@@ -28,5 +29,6 @@
    https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/MaterialsVariantsShoe
 2. 器の3Dモデル: GearBox がプログラムで作成。漆のお椀は、写真1枚から形を割り出して作成（写真は同梱していません）
 3. 傘・指輪・トートバッグ・マグカップ・椅子の3Dモデル: GearBox がプログラムで作成（`js/items.js`）
-4. three.js 0.186.1（MIT License）を `vendor/` に同梱
-5. 書体: Google Fonts（Zen Kaku Gothic New、Dela Gothic One、IBM Plex Mono、Shippori Mincho、Yuji Syuku、Caveat）
+4. three.js 0.186.1（MIT License）を `vendor/` に同梱（AR の書き出しに GLTFExporter を追加）
+5. AR の表示: Google「model-viewer」4.0.0（Apache License 2.0）を jsDelivr から読み込み（改ざん検知の SRI つき）
+6. 書体: Google Fonts（Zen Kaku Gothic New、Dela Gothic One、IBM Plex Mono、Shippori Mincho、Yuji Syuku、Caveat）

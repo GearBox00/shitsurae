@@ -5,6 +5,7 @@ import { buildVessel, sanitizeShape, sampleDefects, crackLength, distToCrack, fl
 import { openPhotoShape } from './photo-shape.js';
 import { openPlanShape } from './plan-shape.js';
 import { buildItem } from './items.js';
+import { openAR } from './ar.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -625,6 +626,10 @@ async function main() {
       if (b && state.options[b.dataset.opt] !== b.dataset.choice) commit(s => { s.options = { ...s.options, [b.dataset.opt]: b.dataset.choice }; });
     });
   }
+
+  // AR で置いてみる（商品設定に arScale がある商品だけ）
+  $('arBtn').hidden = !P.arScale;
+  $('arBtn').addEventListener('click', () => openAR(viewer, eff()));
 
   viewer = new Viewer($('stage'), effModel());
   try {

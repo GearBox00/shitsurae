@@ -452,5 +452,6 @@
       ]
     }
   ],
-  "gemPart": 2
+  "gemPart": 2,
+  "arScale": 0.001
 }
