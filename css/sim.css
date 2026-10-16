@@ -227,6 +227,18 @@ body.editing .ar-btn { display: none; }
 .saved-open { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--mat); cursor: pointer; }
 .saved-open img { display: block; width: 100%; }
 .saved-item figcaption { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.compare-btn { margin-top: 10px; width: 100%; }
+.compare-body { padding: 14px 22px 22px; overflow-y: auto; }
+.compare-scroll { overflow-x: auto; margin-top: 8px; }
+.compare { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+.compare th, .compare td { border-bottom: 1px solid var(--rule); padding: 8px 10px; vertical-align: top; text-align: left; }
+.compare thead td { min-width: 150px; border-bottom: 2px solid var(--ink); }
+.compare tbody th { color: var(--muted); font-weight: 700; white-space: nowrap; position: sticky; left: 0; background: var(--paper); }
+.compare img { display: block; width: 100%; max-width: 220px; border-radius: 8px; background: var(--mat); }
+.compare .cmp-name { font-weight: 700; margin: 6px 0 2px; }
+.compare .cmp-total { font-family: var(--font-mono); font-size: 16px; font-weight: 700; }
+.compare tr.diff td { background: rgba(232, 185, 49, .18); }
+.compare .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.15); }
 .saved-del { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 14px; min-width: 28px; min-height: 28px; }
 
 .slip-foot {

@@ -35,7 +35,7 @@ $in = json_decode((string)$raw, true);
 if (!is_array($in)) { http_response_code(400); exit; }
 
 // 受け付ける値を決め打ちにする（自由文字列は入れさせない）
-$EVENTS = ['view', 'customize', 'variant', 'option', 'photo', 'plan', 'sample', 'trace', 'ar_open', 'share', 'save', 'order', 'error'];
+$EVENTS = ['view', 'customize', 'variant', 'option', 'photo', 'plan', 'sample', 'trace', 'ar_open', 'share', 'save', 'compare', 'order', 'error'];
 $PAGES  = ['top', 'shoe', 'kintsugi', 'urushi', 'umbrella', 'ring', 'tote', 'mug', 'chair'];
 
 $ev   = $in['ev']   ?? '';

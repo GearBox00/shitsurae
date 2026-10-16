@@ -159,6 +159,7 @@
     <section class="slip-sec" id="savedSec" hidden>
       <h2 class="sec-title">保存したデザイン</h2>
       <div class="saved" id="saved"></div>
+      <button class="btn ghost small compare-btn" id="compareBtn" type="button" hidden>並べて比べる</button>
     </section>
 
     <footer class="slip-foot">
@@ -255,6 +256,19 @@
       <div class="ar-stage" id="arStage"></div>
       <p class="note" id="arStatus" role="status"></p>
       <p class="note">選んだ配色のまま、実物の大きさで表示します。ARのファイルはこの端末の中で作り、どこにも送信しません。</p>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="photo compare-dlg" id="compareDlg" aria-labelledby="compareTitle">
+  <div class="photo-inner">
+    <header class="order-head">
+      <h2 id="compareTitle">デザインを比べる</h2>
+      <button class="close" type="button" onclick="this.closest('dialog').close()" aria-label="閉じる">×</button>
+    </header>
+    <div class="compare-body">
+      <p class="note">新しく保存した順に、最大4案を並べています。違う所に色を付けています。</p>
+      <div class="compare-scroll"><table class="compare" id="compareTable"></table></div>
     </div>
   </div>
 </dialog>

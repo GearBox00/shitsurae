@@ -486,6 +486,41 @@ function renderSaved() {
     fig.querySelector('.saved-del').addEventListener('click', () => { store.removeSaved(item.id); renderSaved(); });
     $('saved').appendChild(fig);
   });
+  $('compareBtn').hidden = list.length < 2;
+}
+
+// 保存したデザインを並べて比べる。料金と仕様は、いまの状態を一時的に置き換えて計算する（画面の3Dは変えない）
+function openCompare() {
+  const list = store.saved(productId).slice(0, 4);   // 保存の一覧はもともと新しい順
+  const keep = state;
+  const cols = list.map(item => {
+    state = sanitize(item.state);   // 端末に保存された値も、外から来た値と同じく検査してから使う
+    const r = { item, total: price().total, rows: specRows() };
+    state = keep;
+    return r;
+  });
+  state = keep;
+  const labels = [];
+  cols.forEach(c => c.rows.forEach(([k]) => { if (!labels.includes(k)) labels.push(k); }));
+  const text = html => html.replace(/<[^>]+>/g, '').trim();
+  const head = `<thead><tr><th></th>${cols.map((c, i) => `<td>
+      <img src="${safeImg(c.item.thumb)}" alt="">
+      <p class="cmp-name">${esc(c.item.label)}</p>
+      <p class="cmp-total">${yen(c.total)}</p>
+      <button type="button" class="btn ghost small" data-open="${i}">このデザインを開く</button></td>`).join('')}</tr></thead>`;
+  const body = labels.map(k => {
+    const vals = cols.map(c => (c.rows.find(([kk]) => kk === k) || [k, '—'])[1]);
+    const diff = new Set(vals.map(text)).size > 1;
+    return `<tr class="${diff ? 'diff' : ''}"><th>${esc(k)}</th>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
+  }).join('');
+  $('compareTable').innerHTML = head + `<tbody>${body}</tbody>`;
+  $('compareTable').querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => {
+    const it = cols[+b.dataset.open].item;
+    $('compareDlg').close();
+    commit(s => Object.assign(s, sanitize(it.state)));
+  }));
+  track('compare', productId);
+  $('compareDlg').showModal();
 }
 
 // ---------- 割れの編集モード ----------
@@ -876,10 +911,11 @@ async function main() {
     try { await navigator.clipboard.writeText(link); toast('このデザインのリンクをコピーしました'); }
     catch { prompt('このリンクをコピーしてください', link); }
   });
+  $('compareBtn').addEventListener('click', openCompare);
   $('saveBtn').addEventListener('click', () => {
     track('save', productId);
     const n = store.saved(productId).length + 1;
-    const ok = store.addSaved({ id: Date.now().toString(36), product: productId, label: `デザイン ${n}`, state, thumb: viewer.snapshot('side', 240, 158) });
+    const ok = store.addSaved({ id: Date.now().toString(36), product: productId, label: `デザイン ${n}`, state, thumb: viewer.snapshot(eff().snapshotViews[0], 240, 158) });   // 発注書の1枚目と同じ、形が分かる向きで撮る
     toast(ok ? 'この端末にデザインを保存しました' : '保存できませんでした。ブラウザの保存領域を確認してください');
     renderSaved();
   });

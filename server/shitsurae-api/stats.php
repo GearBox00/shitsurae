@@ -29,7 +29,7 @@ if ($days < 1 || $days > 365) $days = 30;
 
 $EV_LABEL = ['view' => '開いた', 'customize' => '色を変えた', 'variant' => '種類', 'option' => '仕様', 'photo' => '写真で形',
              'plan' => '真上の写真', 'sample' => '見本の写真', 'trace' => '割れをなぞった', 'ar_open' => 'ARを開いた',
-             'share' => 'リンクをコピー', 'save' => '保存', 'order' => '注文', 'error' => 'エラー'];
+             'share' => 'リンクをコピー', 'save' => '保存', 'compare' => '並べて比べた', 'order' => '注文', 'error' => 'エラー'];
 $PAGE_LABEL = ['top' => 'トップ', 'shoe' => '靴', 'kintsugi' => '金継ぎ', 'urushi' => '漆', 'umbrella' => '長傘',
                'ring' => '指輪', 'tote' => 'トートバッグ', 'mug' => 'マグカップ', 'chair' => '椅子'];
 
@@ -79,7 +79,7 @@ if (isset($_GET['json'])) {
 header('Content-Type: text/html; charset=utf-8');
 $h = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $t = $out['totals'];
-$COLS = ['view', 'customize', 'ar_open', 'share', 'save', 'order'];
+$COLS = ['view', 'customize', 'ar_open', 'share', 'save', 'compare', 'order'];
 ?>
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -122,7 +122,7 @@ $COLS = ['view', 'customize', 'ar_open', 'share', 'save', 'order'];
 <div class="scroll"><table><tr><th>日付</th><?php foreach ($COLS as $c) echo '<th>' . $h($EV_LABEL[$c]) . '</th>'; ?></tr>
 <?php foreach ($out['days'] as $d => $evs): ?>
 <tr><td><?= $h($d) ?></td><?php foreach ($COLS as $c) echo '<td>' . $h($evs[$c] ?? 0) . '</td>'; ?></tr>
-<?php endforeach; if (!$out['days']): ?><tr><td colspan="7" style="text-align:center">まだ記録がありません</td></tr><?php endif; ?>
+<?php endforeach; if (!$out['days']): ?><tr><td colspan="8" style="text-align:center">まだ記録がありません</td></tr><?php endif; ?>
 </table></div>
 
 <h2>端末の種類（訪問数）</h2>
