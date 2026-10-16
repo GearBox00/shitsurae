@@ -1,0 +1,16 @@
+# しつらえ計測API 用の設定
+
+# ★重要★ Xサーバーのnginxキャッシュを、このフォルダだけ完全に止める。
+# 上位の .htaccess が全ページをキャッシュする設定になっているため、
+# そのままだと計測の応答や集計画面が保存されて配られてしまう（filedropで実際に発生した罠）。
+SetEnvIf Request_URI ".*" Ngx_Cache_NoCacheMode=on
+UnsetEnv Ngx_Cache_AllCacheMode
+
+# フォルダの中身を一覧表示しない
+Options -Indexes
+
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive"
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "no-referrer"
+</IfModule>

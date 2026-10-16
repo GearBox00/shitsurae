@@ -46,12 +46,12 @@
     <figure class="hero-stage" id="heroStage">
       <div class="hero-loading" id="heroLoading">3Dモデルを読み込んでいます</div>
       <figcaption class="hero-swatches" role="group" aria-label="本体の色を試す">
-        <span>本体の色を試す</span>
+        <span id="heroColorName">本体の色：紺</span>
         <button type="button" data-hex="#1f2e57" aria-label="紺" style="--c:#1f2e57" aria-pressed="true"></button>
         <button type="button" data-hex="#d8462e" aria-label="朱" style="--c:#d8462e"></button>
         <button type="button" data-hex="#4f6b3a" aria-label="苔" style="--c:#4f6b3a"></button>
-        <button type="button" data-hex="#e9b3ba" aria-label="桜" style="--c:#e9b3ba"></button>
-        <button type="button" data-hex="#f2f2ee" aria-label="雪" style="--c:#f2f2ee"></button>
+        <button type="button" data-hex="#e9b3ba" aria-label="桜" style="--c:#e9b3ba" class="light"></button>
+        <button type="button" data-hex="#f2f2ee" aria-label="雪" style="--c:#f2f2ee" class="light"></button>
       </figcaption>
     </figure>
   </section>
@@ -96,11 +96,13 @@
 
 <footer class="tfoot">
   <p>しつらえ（デモ）　制作: 合同会社GearBox</p>
-  <p class="note">靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用。器・傘・指輪・バッグ・マグカップ・椅子の3Dは GearBox がプログラムで作成。価格・仕上げ名・工期はデモ用の仮の値です。</p>
+  <p class="note">靴の3Dモデル: Shopify「Materials Variants Shoe」(CC BY 4.0) を部品分けして使用。器・傘・指輪・バッグ・マグカップ・椅子の3Dは GearBox がプログラムで作成。価格・仕上げ名・工期はデモ用の仮の値です。操作の回数（開いた・ARを開いた など）だけを記録しています。お名前や入力した文字、写真は記録しません。</p>
 </footer>
 
 <script type="module">
 import { Viewer } from './js/viewer.js';
+import { track } from './js/track.js';
+track('view', 'top');
 
 const ITEMS = [
   { id: 'shoe', name: 'ランニングスニーカー', cat: '靴', status: 'open', parts: 8, desc: '8つの部位、3種類の素材、かかとの刺しゅうまで選べます。', tone: '#1f2e57' },
@@ -165,6 +167,7 @@ renderCats(); renderCards();
     document.querySelectorAll('.hero-swatches button').forEach(b => b.addEventListener('click', () => {
       v.setPart(0, b.dataset.hex);
       document.querySelectorAll('.hero-swatches button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      $('heroColorName').textContent = `本体の色：${b.getAttribute('aria-label')}`;
     }));
   } catch (e) {
     console.error(e);

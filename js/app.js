@@ -6,6 +6,7 @@ import { openPhotoShape } from './photo-shape.js';
 import { openPlanShape } from './plan-shape.js';
 import { buildItem } from './items.js';
 import { openAR } from './ar.js';
+import { track } from './track.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -160,6 +161,7 @@ function price() {
 }
 
 function commit(mutator) {
+  track('customize', productId, '', { onlyOnce: true });   // 何かを変えた訪問を1回だけ数える
   undoStack.push(JSON.stringify(state));
   if (undoStack.length > 60) undoStack.shift();
   redoStack.length = 0;
@@ -581,6 +583,7 @@ function submitOrder() {
     state, thumb: viewer.snapshot('side', 360, 236),
   });
   if (!ok) { $('orderErr').textContent = 'この端末に保存できませんでした。ブラウザの保存領域がいっぱいか、使えない設定になっています。'; return; }
+  track('order', productId, variantOf()?.id || '');   // 回数だけ。お名前やメールアドレスは送らない
   form.reset();
   $('orderDlg').close();
   $('doneNo').textContent = no;
@@ -615,7 +618,10 @@ async function main() {
     $('variants').addEventListener('click', e => {
       const b = e.target.closest('[data-variant]');
       // 写真から作った器を使っているときに種類を押したら、その見本の器に戻す
-      if (b && (b.dataset.variant !== state.variant || state.shape)) commit(s => { s.variant = b.dataset.variant; if (s.shape) s.shape = null; });
+      if (b && (b.dataset.variant !== state.variant || state.shape)) {
+        track('variant', productId, b.dataset.variant);
+        commit(s => { s.variant = b.dataset.variant; if (s.shape) s.shape = null; });
+      }
     });
   }
 
@@ -623,13 +629,16 @@ async function main() {
     $('optionSec').hidden = false;
     $('options').addEventListener('click', e => {
       const b = e.target.closest('[data-opt]');
-      if (b && state.options[b.dataset.opt] !== b.dataset.choice) commit(s => { s.options = { ...s.options, [b.dataset.opt]: b.dataset.choice }; });
+      if (b && state.options[b.dataset.opt] !== b.dataset.choice) {
+        track('option', productId, `${b.dataset.opt}.${b.dataset.choice}`);
+        commit(s => { s.options = { ...s.options, [b.dataset.opt]: b.dataset.choice }; });
+      }
     });
   }
 
   // AR で置いてみる（商品設定に arScale がある商品だけ）
   $('arBtn').hidden = !P.arScale;
-  $('arBtn').addEventListener('click', () => openAR(viewer, eff()));
+  $('arBtn').addEventListener('click', () => { track('ar_open', productId); openAR(viewer, eff()); });
 
   viewer = new Viewer($('stage'), effModel());
   try {
@@ -642,6 +651,7 @@ async function main() {
   $('loading').hidden = true;
   loadedKey = modelKey();
   if (params.has('debug')) window.__viewer = viewer;
+  track('view', productId);
   viewer.setAutoRotate(!matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // 写真から器の形を作る（写真はこの端末の中だけで使う）
@@ -653,7 +663,7 @@ async function main() {
       openPhotoShape(file, {
         // 写真の器を使っていればその口径、無ければ写真用の初期値（徳利の口径などを引き継がない）
         rim: state.shape?.rim || P.photoShape?.defaultRim || shapeOf()?.rim || 12,
-        onApply: shape => commit(s => { s.shape = shape; }),
+        onApply: shape => { track('photo', productId); commit(s => { s.shape = shape; }); },
         onError: msg => { $('shapeErr').textContent = msg; },
       });
     };
@@ -671,7 +681,11 @@ async function main() {
         return new File([b], path.split('/').pop(), { type: b.type || 'image/jpeg' });
       } catch { $(err).textContent = '見本の写真を読み込めませんでした。通信の状態を確かめて、もう一度お試しください。'; return null; }
     };
-    $('shapeSample').addEventListener('click', async () => { const f = await sampleFile('assets/samples/side.jpg', 'shapeErr'); if (f) openSide(f); });
+    $('shapeSample').addEventListener('click', async () => {
+      track('sample', productId, 'side');
+      const f = await sampleFile('assets/samples/side.jpg', 'shapeErr');
+      if (f) openSide(f);
+    });
     $('shapeReset').addEventListener('click', () => commit(s => { s.shape = null; }));
     // 真上の写真で丸くない外形を決める（金継ぎだけ）
     if (defectsOn()) {
@@ -680,7 +694,7 @@ async function main() {
       const openTop = file => {
         $('planErr').textContent = '';
         openPlanShape(file, {
-          onApply: plan => commit(s => { s.plan = plan; }),
+          onApply: plan => { track('plan', productId); commit(s => { s.plan = plan; }); },
           onError: msg => { $('planErr').textContent = msg; },
         });
       };
@@ -689,7 +703,11 @@ async function main() {
         e.target.value = '';
         openTop(file);
       });
-      $('planSample').addEventListener('click', async () => { const f = await sampleFile('assets/samples/top.jpg', 'planErr'); if (f) openTop(f); });
+      $('planSample').addEventListener('click', async () => {
+        track('sample', productId, 'top');
+        const f = await sampleFile('assets/samples/top.jpg', 'planErr');
+        if (f) openTop(f);
+      });
       $('planReset').addEventListener('click', () => commit(s => { s.plan = null; }));
     }
   }
@@ -752,6 +770,7 @@ async function main() {
       const step = Math.max(1, Math.ceil(pts.length / 120));
       const kept = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
       // 平らな面（上向き・下向き）でなぞった点は上下に、壁でなぞった点は内外に器を貫く
+      track('trace', productId, '', { onlyOnce: true });
       commit(s => { const d = editDefs(s); d.cracks.push(kept.map(p => [r3(p.theta, 3), r3(p.y, 2), r3(p.r, 2), Math.abs(p.normal.y) > 0.7 ? 1 : 0])); s.defects = d; });
     });
   }
@@ -851,12 +870,14 @@ async function main() {
     });
   }));
   $('shareBtn').addEventListener('click', async () => {
+    track('share', productId);
     // 商品ごとの入口のページ（s/<id>.html）を通すと、LINE や SNS に貼ったとき商品の画像とタイトルが出る
     const link = new URL(`s/${productId}.html`, location.href).href + location.hash;
     try { await navigator.clipboard.writeText(link); toast('このデザインのリンクをコピーしました'); }
     catch { prompt('このリンクをコピーしてください', link); }
   });
   $('saveBtn').addEventListener('click', () => {
+    track('save', productId);
     const n = store.saved(productId).length + 1;
     const ok = store.addSaved({ id: Date.now().toString(36), product: productId, label: `デザイン ${n}`, state, thumb: viewer.snapshot('side', 240, 158) });
     toast(ok ? 'この端末にデザインを保存しました' : '保存できませんでした。ブラウザの保存領域を確認してください');

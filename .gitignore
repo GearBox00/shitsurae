@@ -6,3 +6,4 @@ tools/clusters.png
 tools/labels.npy
 tools/tex_*.jpg
 開発メモ.md
+server/config.local.php
